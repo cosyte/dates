@@ -4,9 +4,18 @@ name: Scorecard
 # SARIF artifact, the code-scanning upload) are defined once in `cosyte/.github` and are
 # deliberately NOT reimplemented here.
 #
-# Never on `pull_request`: the analysis wants the default branch, and publishing (when it is
-# on) only works from there. So this workflow contributes no check run to a pull request, and
-# `no-emdash.yml` is what a pull request against this repo is gated by.
+# DEFAULT BRANCH ONLY, and that is a hard constraint rather than a preference. `ossf/scorecard-action`
+# validates it before it does anything: run it from any other ref and it exits with
+# "validating options: only default branch is supported". Measured on this exact caller on
+# 2026-08-29, from a throwaway branch, precisely so this line is not a guess.
+#
+# Two things follow, and they are the reason this file looks the way it does:
+#
+#   1. This workflow contributes NO check run to a pull request, so `no-emdash.yml` is the only
+#      thing gating one. Do not add `pull_request:` here to get a second gate; it cannot work.
+#   2. This workflow's FIRST REAL RUN IS THE MERGE. There is no way to prove it green beforehand,
+#      so it is configured for the fewest moving parts rather than the most features. That is why
+#      `publish-results` is off below.
 
 on:
   push:

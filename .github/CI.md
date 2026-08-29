@@ -20,7 +20,12 @@ pull requests that would fix it.
 | `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of `cosyte/.github/.github/workflows/scorecard.yml@main`. Supply-chain analysis, SARIF into the Security tab. |
 
 Only `no-emdash.yml` emits a check run on a pull request. `scorecard.yml` never
-runs on `pull_request`, by design: the analysis wants the default branch.
+runs on `pull_request`, and that is a hard constraint rather than a style
+choice: `ossf/scorecard-action` validates the ref before it does anything and
+exits with "validating options: only default branch is supported" anywhere else.
+Measured on this repo's own caller on 2026-08-29 from a throwaway branch. So
+that workflow's first real run is the merge to `main`, and there is no way to
+prove it green beforehand.
 
 Two notes on the pair, because both are the kind of thing a later reader
 otherwise has to rediscover:
