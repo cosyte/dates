@@ -1,0 +1,58 @@
+name: Scorecard
+
+# Thin CALLER of the org reusable supply-chain analysis. The steps (OpenSSF Scorecard, the
+# SARIF artifact, the code-scanning upload) are defined once in `cosyte/.github` and are
+# deliberately NOT reimplemented here.
+#
+# Never on `pull_request`: the analysis wants the default branch, and publishing (when it is
+# on) only works from there. So this workflow contributes no check run to a pull request, and
+# `no-emdash.yml` is what a pull request against this repo is gated by.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "27 3 * * 2"
+
+permissions:
+  contents: read
+
+jobs:
+  scorecard:
+    # A called workflow can only DOWNGRADE the caller's token, never escalate it, so the
+    # caller has to grant everything the reusable declares. All three are required.
+    permissions:
+      contents: read # required to RESOLVE the reusable; omit it and the job gets
+        # contents:none and startup-fails before any step runs
+      security-events: write # upload the SARIF to the Security tab
+      id-token: write # the OIDC token the publish path uses
+    uses: cosyte/.github/.github/workflows/scorecard.yml@main
+    with:
+      # PUBLISH IS OFF, DELIBERATELY, AND THIS IS THE ONLY PLACE IT DIFFERS FROM THE
+      # hl7 AND github-profile CALLERS, WHICH BOTH TAKE THE DEFAULT (`true`).
+      #
+      # The reusable's default publishes this repository's Scorecard result to the public
+      # OpenSSF REST API. `cosyte/dates` is a public repo, so that call would technically
+      # succeed. It is off anyway, for two reasons:
+      #
+      #   1. IT IS THE ONE-WAY DOOR. Publishing writes a third-party, publicly readable
+      #      record of this repository's posture into a registry this org does not control,
+      #      and un-publishing it is not something a later commit here can do. The repository
+      #      is PRE-LAUNCH and its tracked tree is two files, so the score would describe an
+      #      empty shell rather than the package, and it would describe it permanently.
+      #      Turning publishing ON later is one deleted line and costs nothing. Turning it
+      #      OFF later does not undo anything. Take the reversible option first.
+      #
+      #   2. IT REMOVES A WHOLE CLASS OF RED DEFAULT BRANCH. The publish path is the part of
+      #      this analysis that depends on an external API and an OIDC exchange, and it is
+      #      the part that can fail for reasons no change in this repo controls. This repo's
+      #      whole purpose right now is to be able to report green, because the lander refuses
+      #      when a submodule's CI cannot be read as green. The SARIF upload to the Security
+      #      tab, which is the analysis this repo actually wants, is a separate step and still
+      #      runs.
+      #
+      # THE UNBLOCKING PRECONDITION, so this is not left as an unexplained deviation: delete
+      # these two lines (the `with:` block) when `dates` publishes a first release and the
+      # OpenSSF badge starts being worth something. `id-token: write` is granted above either
+      # way, so no permission change is needed to flip it back.
+      publish-results: false
