@@ -22,10 +22,10 @@
 #      across on the next port: an exclusion nobody needs is a place for prose to
 #      hide by choosing a directory.
 #
-#   2. No `pnpm` alias. hl7 offers `pnpm check:no-emdash` because it has a package
-#      manifest; `dates` deliberately has none yet (see `.github/CI.md`), so the only
-#      way to run this, locally and in CI alike, is `bash scripts/check-no-emdash.sh`.
-#      When the package lands, add the alias; do not add a manifest for the alias.
+#   2. The `pnpm check:no-emdash` alias is the same one hl7 offers, and it is a
+#      CONVENIENCE ONLY. `bash scripts/check-no-emdash.sh` stays the canonical
+#      invocation, and it is what both workflows run, because the gate has to work
+#      on a checkout where dependencies were never installed.
 #
 # Do NOT swap in the website copy. That one partitions on the NUL byte to tolerate
 # tracked rasters, and its extra machinery buys nothing here while adding a way for a

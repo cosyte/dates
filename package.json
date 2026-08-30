@@ -1,0 +1,70 @@
+{
+  "name": "@cosyte/dates",
+  "version": "0.1.0",
+  "description": "Date and time utilities for the @cosyte/* healthcare parsers: precision-preserving conversion and validation that never guesses a timezone.",
+  "license": "MIT",
+  "author": "Cosyte",
+  "type": "module",
+  "sideEffects": false,
+  "homepage": "https://github.com/cosyte/dates#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cosyte/dates.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cosyte/dates/issues"
+  },
+  "keywords": [
+    "date",
+    "datetime",
+    "healthcare",
+    "hl7",
+    "temporal",
+    "precision",
+    "timezone",
+    "validation"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@10.34.5",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.{ts,json,md,yml}\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"*.{ts,json,md,yml}\"",
+    "test": "vitest run",
+    "test:tz": "TZ=UTC vitest run && TZ=Pacific/Kiritimati vitest run",
+    "check:no-emdash": "bash scripts/check-no-emdash.sh"
+  },
+  "dependencies": {
+    "temporal-polyfill": "1.0.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.1",
+    "eslint": "10.9.1",
+    "prettier": "3.9.6",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.68.0",
+    "vitest": "4.1.11"
+  }
+}
