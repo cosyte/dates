@@ -1,0 +1,88 @@
+name: CI
+
+# The gate for this repository, from the commit that gave it a package.
+#
+# ONE JOB, DELIBERATELY. Every rung runs inside `verify`, so the workflow reports
+# a single conclusive status rather than a set that has to be combined before it
+# can be read. A matrix would report several, and the thing reading this is a
+# sweep that asks "is `dates` green".
+#
+# REPO-LOCAL, NOT THE ORG REUSABLE, and that is a choice with a reason rather
+# than an oversight. `.github/CI.md` records `cosyte/.github/.github/workflows/
+# ci.yml@main` as the intended pipeline once this repo had a manifest, and it now
+# has one. Two things still argue for the local gate today:
+#
+#   1. The reusable runs a FIXED ladder and no arbitrary repo script, so it
+#      cannot run `scripts/check-no-emdash.sh`. The em-dash gate has to be in
+#      whichever workflow is the gate, and here it is this one.
+#   2. Its ladder includes a dual ESM/CJS smoke import. This package is ESM only
+#      by decision, ships no CommonJS build, and would be red on arrival for a
+#      reason no change here should fix.
+#
+# Adopting the reusable is a later, separate change with its own preconditions.
+# It is not blocked by anything in this file: delete the steps, add a `uses:`.
+#
+# The em-dash gate ALSO has its own workflow (`no-emdash.yml`), and the overlap
+# is on purpose. That one runs on the `edited` activity type so it re-checks a
+# pull request's title and body, which is the squash-merge commit message; this
+# one scans the tracked files as part of the single status a sweep reads. Neither
+# subsumes the other.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # No `version:` input: the action reads `packageManager` from package.json,
+      # which is the same pin the lockfile was written by. Naming a version here
+      # would be a second source of truth for one fact.
+      - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
+
+      # The engine floor the package declares, so the gate proves the floor
+      # rather than whatever the runner happens to ship.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Format check
+        run: pnpm run format:check
+
+      - name: Test
+        run: pnpm run test
+
+      # The package promises the host time zone changes nothing. A suite that
+      # only ever runs under the runner's zone cannot notice a regression that
+      # reintroduces a host-zone dependency, so it runs again from the other side
+      # of the world.
+      - name: Test under two host time zones
+        run: pnpm run test:tz
+
+      - name: Em dash gate
+        run: bash scripts/check-no-emdash.sh
