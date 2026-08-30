@@ -272,6 +272,24 @@ describe('validateParts, hostile input', () => {
     expect(validateParts({ ...base, fraction: 0.123456789 })).toMatchObject({ valid: true });
   });
 
+  // A fraction just under one second is inside `0 <= fraction < 1` and is still
+  // not a sub-second value: its nearest nanosecond is a whole second. Certifying
+  // it valid is what let a stated ~0.999999999999s be rendered as 0.1s, so the
+  // refusal is asserted here at the validator, where the certificate is issued.
+  it('rejects a fraction whose nearest nanosecond is a whole second', () => {
+    const base = { year: 1988, month: 5, day: 7, hour: 13, minute: 45, second: 6 };
+    for (const fraction of [
+      0.999999999999, 0.9999999999999, 0.99999999999999, 0.999999999999999, 0.9999999999999999,
+    ]) {
+      const issue = issueFor({ ...base, fraction }, 'fraction');
+      expect(issue.code).toBe('finer-than-nanosecond');
+      expect(issue.message).toContain('finer than one nanosecond');
+    }
+    // The neighbours either side of the refusal both behave.
+    expect(validateParts({ ...base, fraction: 0.999999999 })).toMatchObject({ valid: true });
+    expect(issueFor({ ...base, fraction: 1 }, 'fraction').code).toBe('out-of-range');
+  });
+
   it('reports every fault, not only the first', () => {
     const issues = issuesOf({ year: 88, month: 13, day: 40, hour: 25 });
     expect(issues.map((issue) => issue.component).sort()).toEqual(['day', 'hour', 'month', 'year']);
@@ -282,5 +300,77 @@ describe('validateParts, hostile input', () => {
     expect(result).toMatchObject({ valid: true, precision: 'day' });
     if (!result.valid) return;
     expect(Object.keys(result.parts)).toEqual(['year', 'month', 'day']);
+  });
+
+  // A component can be an accessor and an accessor can throw. The doc comment
+  // promises this function never throws for ANY argument, so the promise is held
+  // to the letter here rather than only for the argument shapes anyone listed.
+  it('reports a component that throws when it is read, rather than raising', () => {
+    const throwingYear = {
+      get year(): number {
+        throw new Error('boom');
+      },
+    };
+    const result = validateParts(throwingYear);
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    const issue = result.issues.find((candidate) => candidate.component === 'year');
+    expect(issue?.code).toBe('unreadable');
+    expect(issue?.message).toContain('threw when accessed');
+    expect(issue?.message).toContain('will not guess');
+  });
+
+  it('reports a proxy whose every read throws, rather than raising', () => {
+    const hostileProxy = new Proxy(
+      {},
+      {
+        get(): never {
+          throw new Error('no reads for you');
+        },
+      },
+    );
+    expect(() => validateParts(hostileProxy)).not.toThrow();
+    expect(validateParts(hostileProxy).valid).toBe(false);
+  });
+
+  it('reports a throwing accessor on any component, not only the first', () => {
+    for (const name of ['month', 'day', 'hour', 'minute', 'second', 'fraction', 'offsetMinutes']) {
+      const value = Object.defineProperty(
+        { year: 1988, month: 5, day: 7, hour: 1, minute: 1, second: 1 },
+        name,
+        {
+          configurable: true,
+          enumerable: true,
+          get(): never {
+            throw new Error(`${name} is a trap`);
+          },
+        },
+      );
+      expect(() => validateParts(value)).not.toThrow();
+      const result = validateParts(value);
+      expect(result.valid).toBe(false);
+      if (result.valid) continue;
+      expect(result.issues.some((issue) => issue.component === name)).toBe(true);
+    }
+  });
+
+  // A parser may hand over a class instance whose components are accessors on
+  // the prototype. Looking components up by name reads those the same way it
+  // reads a plain object literal, which is deliberate: refusing them would make
+  // this package unusable with a shape it exists to serve.
+  it('reads a component carried on the prototype the same way as an own property', () => {
+    class Parts {
+      get year(): number {
+        return 1988;
+      }
+      get month(): number {
+        return 5;
+      }
+    }
+    expect(validateParts(new Parts())).toMatchObject({ valid: true, precision: 'month' });
+    expect(validateParts(Object.create({ year: 1988 }) as object)).toMatchObject({
+      valid: true,
+      precision: 'year',
+    });
   });
 });

@@ -6,6 +6,7 @@ import {
   MissingZoneError,
   PrecisionError,
 } from './errors.js';
+import { readFraction } from './fraction.js';
 import { PRECISION_LADDER } from './types.js';
 import type { DateParts, Precision, ZoneOptions } from './types.js';
 import { validateParts } from './validate.js';
@@ -46,10 +47,26 @@ function formatOffset(offsetMinutes: number): string {
   return `${sign}${pad(Math.trunc(absolute / 60), 2)}:${pad(absolute % 60, 2)}`;
 }
 
+/**
+ * The whole nanoseconds a fraction denotes.
+ *
+ * Every converter reads a fraction through the SAME function the validator uses,
+ * so a value the validator has just certified can never reach a converter that
+ * disagrees with it. A fraction the reader refuses is refused here with the
+ * validator's own diagnostic rather than by leaking whatever Temporal makes of
+ * a nonsense field.
+ *
+ * @throws {DatePartsError} if the fraction is not a whole number of nanoseconds.
+ */
+function nanosecondsOf(fraction: number): number {
+  const reading = readFraction(fraction);
+  if (!reading.ok) throw new DatePartsError([reading.issue]);
+  return reading.nanoseconds;
+}
+
 /** Sub-second digits, trimmed of trailing zeros but never to nothing. */
 function formatFraction(fraction: number): string {
-  const nanoseconds = Math.round(fraction * 1e9);
-  const digits = pad(nanoseconds, 9).replace(/0+$/, '');
+  const digits = pad(nanosecondsOf(fraction), 9).replace(/0+$/, '');
   return `.${digits === '' ? '0' : digits}`;
 }
 
@@ -59,7 +76,7 @@ function subSecondFields(fraction: number | undefined): {
   nanosecond?: number;
 } {
   if (fraction === undefined) return {};
-  const nanoseconds = Math.round(fraction * 1e9);
+  const nanoseconds = nanosecondsOf(fraction);
   return {
     millisecond: Math.floor(nanoseconds / 1e6),
     microsecond: Math.floor((nanoseconds % 1e6) / 1e3),
@@ -246,34 +263,60 @@ export function toZonedDateTime(value: unknown, options?: ZoneOptions): Temporal
   const { parts, precision } = check(value);
 
   if (!atLeast(precision, 'hour')) {
+    // A value below hour precision that also states no zone is missing BOTH, and
+    // hearing about them one at a time is how a caller fixes one and comes back.
+    // The precision is what is reported, because supplying a zone would not make
+    // this value convertible, but the message says the zone is absent too, and
+    // says as firmly as the zone refusal does that nothing will be defaulted.
+    const alsoNoZone =
+      parts.offsetMinutes === undefined &&
+      options?.timeZone === undefined &&
+      options?.offsetMinutes === undefined;
+
     throw new PrecisionError(
-      `an absolute instant needs a time of day, and this value has ${precision} precision. Supplying one would mean inventing components the value does not carry. Use toTemporal() for the calendar value`,
+      `an absolute instant needs a time of day, and this value has ${precision} precision. Supplying one would mean inventing components the value does not carry. Use toTemporal() for the calendar value${
+        alsoNoZone
+          ? '. The zone is missing too: this value carries no offsetMinutes and no { timeZone } or { offsetMinutes } was supplied, and neither the host time zone nor UTC will be used in their place'
+          : ''
+      }`,
       precision,
     );
   }
 
   const timeZone = resolveTimeZone(parts, options);
-  const fields = {
-    year: parts.year ?? 0,
-    month: parts.month ?? 0,
-    day: parts.day ?? 0,
-    hour: parts.hour ?? 0,
-    minute: parts.minute ?? 0,
-    second: parts.second ?? 0,
-    ...subSecondFields(parts.fraction),
-    timeZone,
-  };
+  const local = Temporal.PlainDateTime.from(
+    {
+      year: parts.year ?? 0,
+      month: parts.month ?? 0,
+      day: parts.day ?? 0,
+      hour: parts.hour ?? 0,
+      minute: parts.minute ?? 0,
+      second: parts.second ?? 0,
+      ...subSecondFields(parts.fraction),
+    },
+    { overflow: 'reject' },
+  );
 
-  try {
-    return Temporal.ZonedDateTime.from(fields, {
-      overflow: 'reject',
-      disambiguation: 'reject',
-    });
-  } catch (cause) {
+  // Ambiguity is established by ASKING, not by catching. The two disambiguation
+  // rules agree on every local time a zone maps exactly once, and disagree on
+  // exactly the times a transition skips or repeats. Reading the answer off a
+  // thrown message would instead relabel any other failure as a transition, and
+  // a fixed offset zone, which has no transitions at all, would be told it did.
+  const earliest = local.toZonedDateTime(timeZone, { disambiguation: 'earlier' });
+  const latest = local.toZonedDateTime(timeZone, { disambiguation: 'later' });
+
+  if (!earliest.equals(latest)) {
+    // A repeated local time still reads back as itself, at two offsets. A skipped
+    // one cannot: both rules move it off the gap, so the wall clock shifts.
+    const skipped = !earliest.toPlainDateTime().equals(local);
     throw new AmbiguousLocalTimeError(
-      `this local time does not exist exactly once in ${timeZone}: a daylight-saving transition either skips it or repeats it, so there is no single instant to return. Choose the offset you mean and pass it as { offsetMinutes }. (${String(cause)})`,
+      skipped
+        ? `${local.toString()} does not exist in ${timeZone}: a daylight-saving transition skips it, so there is no instant to return. Say which side of the transition you mean by passing that offset as { offsetMinutes }`
+        : `${local.toString()} happens twice in ${timeZone}: a daylight-saving transition repeats it, at ${earliest.offset} and again at ${latest.offset}, so there is no single instant to return. Choose the one you mean and pass it as { offsetMinutes }`,
     );
   }
+
+  return earliest;
 }
 
 /**

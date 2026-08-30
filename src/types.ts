@@ -58,6 +58,8 @@ export type IssueCode =
   | 'not-a-parts-object'
   /** A more significant component is absent while a less significant one is present. */
   | 'missing-component'
+  /** Reading the component threw, so its value could not be seen at all. */
+  | 'unreadable'
   /** The component is present but is not a number. */
   | 'not-a-number'
   /** The component is a number but is `NaN` or infinite. */

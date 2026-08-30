@@ -18,6 +18,16 @@ import { runBuiltPackageScript } from './support/run.js';
 
 const MAY_SEVENTH = { year: 1988, month: 5, day: 7 } as const;
 
+/** The message a refusal carried, or `'no refusal'` when nothing was thrown. */
+function messageFrom(run: () => unknown): string {
+  try {
+    run();
+    return 'no refusal';
+  } catch (error) {
+    return (error as Error).message;
+  }
+}
+
 // Criterion: a year, month and day with no time components converts to a value
 // denoting that calendar date, with no time of day and no zone, introducing
 // neither midnight nor an offset.
@@ -197,6 +207,31 @@ describe('an absolute instant needs a zone somebody stated', () => {
     expect(() => toInstant(MAY_SEVENTH, { timeZone: 'UTC' })).toThrow(/time of day/);
   });
 
+  // A value below hour precision that also states no zone is missing BOTH, and
+  // the criterion's trigger matches it. The precision is what is reported, since
+  // a zone would not make this value convertible, but the refusal still names
+  // the zone inputs and still promises no fallback, so a caller reading only the
+  // message is never left thinking a default might apply.
+  it('names the missing zone as well as the precision when both are absent', () => {
+    for (const value of [{ year: 1988 }, { year: 1988, month: 5 }, MAY_SEVENTH]) {
+      const message = messageFrom(() => toInstant(value));
+      expect(message).toContain('time of day');
+      expect(message).toContain('offsetMinutes');
+      expect(message).toContain('timeZone');
+      expect(message).toContain('host time zone');
+      expect(message).toContain('UTC');
+      expect(() => toInstant(value)).toThrow(PrecisionError);
+    }
+  });
+
+  it('says only what is missing: a stated zone leaves the precision the whole complaint', () => {
+    for (const options of [{ timeZone: 'UTC' }, { offsetMinutes: 0 }, { offsetMinutes: 330 }]) {
+      const message = messageFrom(() => toInstant(MAY_SEVENTH, options));
+      expect(message).toContain('time of day');
+      expect(message).not.toContain('The zone is missing too');
+    }
+  });
+
   it('refuses an unknown time zone identifier', () => {
     expect(() => toInstant(noOffset, { timeZone: 'Mars/Olympus_Mons' })).toThrow(RangeError);
   });
@@ -215,6 +250,129 @@ describe('an absolute instant needs a zone somebody stated', () => {
       AmbiguousLocalTimeError,
     );
     expect(toInstant(fallBack, { offsetMinutes: -240 }).toString()).toBe('2024-11-03T05:30:00Z');
+  });
+
+  it('says which kind of transition it is, because the two need different answers', () => {
+    const skipped = messageFrom(() =>
+      toInstant(
+        { year: 2024, month: 3, day: 10, hour: 2, minute: 30 },
+        {
+          timeZone: 'America/New_York',
+        },
+      ),
+    );
+    expect(skipped).toContain('2024-03-10T02:30:00');
+    expect(skipped).toContain('does not exist in America/New_York');
+    expect(skipped).toContain('skips it');
+
+    const repeated = messageFrom(() =>
+      toInstant(
+        { year: 2024, month: 11, day: 3, hour: 1, minute: 30 },
+        {
+          timeZone: 'America/New_York',
+        },
+      ),
+    );
+    expect(repeated).toContain('2024-11-03T01:30:00');
+    expect(repeated).toContain('happens twice in America/New_York');
+    // Both candidate offsets, so the caller can pick one and say so.
+    expect(repeated).toContain('-04:00');
+    expect(repeated).toContain('-05:00');
+  });
+
+  // A fixed offset zone has no transitions at all. Deciding ambiguity by asking
+  // the zone, rather than by relabelling whatever a conversion threw, is what
+  // keeps this diagnostic from being reported where it cannot be true.
+  it('never blames a daylight-saving transition in a zone that has none', () => {
+    for (const offsetMinutes of [0, 330, -240, 1439, -1439]) {
+      const zoned = toZonedDateTime(
+        { ...MAY_SEVENTH, hour: 2, minute: 30, second: 0, fraction: 0.5 },
+        { offsetMinutes },
+      );
+      expect(zoned.hour).toBe(2);
+      expect(zoned.minute).toBe(30);
+    }
+    // The instants a named zone refuses convert cleanly at a stated offset.
+    expect(
+      messageFrom(() =>
+        toZonedDateTime(
+          { year: 2024, month: 3, day: 10, hour: 2, minute: 30 },
+          {
+            offsetMinutes: -300,
+          },
+        ),
+      ),
+    ).toBe('no refusal');
+  });
+});
+
+// S0188 impl gate, finding F1. A fraction just under one second sits inside the
+// contract's `0 <= fraction < 1` and is not a sub-second value: its nearest
+// nanosecond is a whole second. It was reported VALID and then rendered `.1`, a
+// silent 0.9-second error, while the Temporal paths leaked a raw RangeError and
+// blamed a daylight-saving transition in a fixed offset zone that has none.
+//
+// Two answers were open, refuse the value or render it, and this suite pins the
+// REFUSAL. The spec's contract says a fraction is "retained as given", and there
+// is no way to render 0.999999999999s as nanoseconds while retaining it: the
+// only rendering available truncates 0.999ns away, which is the same silent
+// rounding in a smaller coat. Refusing says what happened instead, and every
+// entry point says the same thing about the same value.
+describe('a fraction the validator refuses reaches no converter', () => {
+  const BASE = { year: 1988, month: 5, day: 7, hour: 13, minute: 45, second: 6 } as const;
+  const NEAR_ONE = [
+    0.999999999999, 0.9999999999999, 0.99999999999999, 0.999999999999999, 0.9999999999999999,
+  ];
+
+  it.each(NEAR_ONE)('refuses %d everywhere, with one diagnostic', (fraction) => {
+    const parts = { ...BASE, fraction };
+    const result = validateParts(parts);
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+
+    for (const convert of [
+      () => toISO(parts),
+      () => toTemporal(parts),
+      () => toZonedDateTime(parts, { offsetMinutes: 0 }),
+      () => toInstant(parts, { timeZone: 'America/New_York' }),
+    ]) {
+      let thrown: unknown;
+      try {
+        const returned = convert();
+        throw new Error(`conversion returned ${String(returned)} instead of refusing`);
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).toBeInstanceOf(DatePartsError);
+      expect((thrown as DatePartsError).issues).toEqual(result.issues);
+      // Not a raw RangeError, and never a transition in a fixed offset zone.
+      expect((thrown as Error).name).toBe('DatePartsError');
+      expect((thrown as Error).message).not.toContain('daylight-saving');
+      expect((thrown as Error).message).not.toContain('Invalid millisecond');
+    }
+  });
+
+  it.each(NEAR_ONE)(
+    'renders %d as nothing at all, least of all as a tenth of a second',
+    (fraction) => {
+      expect(messageFrom(() => toISO({ ...BASE, fraction }))).toContain(
+        'finer than one nanosecond',
+      );
+      expect(() => toISO({ ...BASE, fraction })).toThrow(DatePartsError);
+    },
+  );
+
+  it('still renders every fraction that IS a whole number of nanoseconds', () => {
+    expect(toISO({ ...BASE, fraction: 0.999999999 })).toBe('1988-05-07T13:45:06.999999999');
+    expect(toISO({ ...BASE, fraction: 0.1 })).toBe('1988-05-07T13:45:06.1');
+    expect(toISO({ ...BASE, fraction: 1e-9 })).toBe('1988-05-07T13:45:06.000000001');
+    expect(toISO({ ...BASE, fraction: 0 })).toBe('1988-05-07T13:45:06.0');
+    expect(toTemporal({ ...BASE, fraction: 0.999999999 }).toString()).toBe(
+      '1988-05-07T13:45:06.999999999',
+    );
+    expect(
+      toZonedDateTime({ ...BASE, fraction: 0.999999999 }, { offsetMinutes: 0 }).toString(),
+    ).toBe('1988-05-07T13:45:06.999999999+00:00[+00:00]');
   });
 });
 

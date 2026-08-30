@@ -1,4 +1,5 @@
 import { DatePartsError } from './errors.js';
+import { readFraction } from './fraction.js';
 import { PRECISION_LADDER } from './types.js';
 import type {
   DateParts,
@@ -82,6 +83,34 @@ function invalid(issues: readonly ValidationIssue[]): InvalidPartsResult {
 }
 
 /**
+ * Read one named component off a candidate parts object.
+ *
+ * A component can be an accessor, and an accessor can throw. Reading it is
+ * therefore guarded, so that a hostile or merely broken object is REPORTED like
+ * any other fault rather than raising out of a function whose whole contract is
+ * that it answers instead of throwing.
+ */
+function readComponent(
+  source: Record<string, unknown>,
+  name: PartName,
+):
+  | { readonly ok: true; readonly raw: unknown }
+  | { readonly ok: false; readonly issue: ValidationIssue } {
+  try {
+    return { ok: true, raw: source[name] };
+  } catch {
+    return {
+      ok: false,
+      issue: {
+        component: name,
+        code: 'unreadable',
+        message: `${name} could not be read: the property threw when accessed, so this package cannot see what value it holds and will not guess one`,
+      },
+    };
+  }
+}
+
+/**
  * Check a value against the date-parts contract.
  *
  * Every fault is reported, not only the first, and every diagnostic names the
@@ -89,8 +118,13 @@ function invalid(issues: readonly ValidationIssue[]): InvalidPartsResult {
  * is coerced, clamped or inferred: a value that does not satisfy the contract
  * comes back invalid rather than corrected.
  *
- * This function never throws. Hostile input (`null`, a string, a JavaScript
- * `Date`, `NaN`, `Infinity`, a non-integer component) is reported, not raised.
+ * This function never throws, for any argument at all. Hostile input (`null`, a
+ * string, a JavaScript `Date`, `NaN`, `Infinity`, a non-integer component, a
+ * component that throws when it is read) is reported, not raised.
+ *
+ * Components are looked up by name, so an object carrying them on its prototype
+ * (a class instance with accessors, which is a shape a parser may well hand
+ * over) is read the same way a plain object literal is.
  */
 export function validateParts(value: unknown): ValidationResult {
   if (typeof value !== 'object' || value === null) {
@@ -131,7 +165,14 @@ export function validateParts(value: unknown): ValidationResult {
   const values: Partial<Record<PartName, number>> = {};
 
   for (const name of ALL_PARTS) {
-    const raw = source[name];
+    const read = readComponent(source, name);
+    if (!read.ok) {
+      present.add(name);
+      issues.push(read.issue);
+      continue;
+    }
+
+    const raw = read.raw;
     // An explicit `undefined` reads as absent, the way an optional property does.
     if (raw === undefined) continue;
     present.add(name);
@@ -155,8 +196,9 @@ export function validateParts(value: unknown): ValidationResult {
     }
 
     if (name === 'fraction') {
-      const checked = checkFraction(raw, issues);
-      if (checked !== undefined) values.fraction = checked;
+      const reading = readFraction(raw);
+      if (reading.ok) values.fraction = raw;
+      else issues.push(reading.issue);
       continue;
     }
 
@@ -203,30 +245,6 @@ export function validateParts(value: unknown): ValidationResult {
   }
 
   return { valid: true, parts, precision: deepestPresent(present) as Precision };
-}
-
-function checkFraction(raw: number, issues: ValidationIssue[]): number | undefined {
-  if (raw < 0 || raw >= 1) {
-    issues.push({
-      component: 'fraction',
-      code: 'out-of-range',
-      message: `fraction is a share of one second and must satisfy 0 <= fraction < 1; received the number ${String(raw)}`,
-    });
-    return undefined;
-  }
-
-  const nanoseconds = raw * 1e9;
-  const rounded = Math.round(nanoseconds);
-  if (Math.abs(nanoseconds - rounded) > 1e-3 || (raw > 0 && rounded === 0)) {
-    issues.push({
-      component: 'fraction',
-      code: 'finer-than-nanosecond',
-      message: `fraction carries detail finer than one nanosecond, which this package will not round away; received the number ${String(raw)}`,
-    });
-    return undefined;
-  }
-
-  return raw;
 }
 
 function deepestPresent(present: ReadonlySet<PartName>): Precision | undefined {

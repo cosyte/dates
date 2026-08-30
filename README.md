@@ -127,7 +127,8 @@ package does about that:
   calls. A value passed in is not cached, memoised or referenced after return.
 - **It refuses rather than guesses.** No century window, no host timezone
   fallback, no midnight for a date with no time, no picking one side of a
-  daylight-saving transition. Each of those raises a named error instead.
+  daylight-saving transition, no rounding a sub-second value to make it fit.
+  Each of those raises a named error instead.
 - **Diagnostics quote one component, never the whole value.** A validation
   message names the component at fault and the value of THAT component
   (`month must be an integer in 1-12 ...; received the number 13`). It never
@@ -171,10 +172,16 @@ The input shape is the spec-native parts value the `@cosyte/*` parsers produce:
 downward with no gaps. Handled: year, month, day, hour, minute, second,
 sub-second down to one nanosecond, and a signed offset in minutes.
 
+`fraction` must be a whole number of nanoseconds, which is nine decimal places of
+a second and Temporal's own floor. A value carrying finer detail is REFUSED with
+`finer-than-nanosecond` rather than rounded to fit, because a silent round is the
+class of change this package exists to not make.
+
 Known NOT handled, deliberately: two-digit years, leap seconds, calendars other
-than the proleptic Gregorian, years outside 1000 to 9999, an offset on a value
-that states no time of day, and any zone abbreviation such as `CST` (they are
-ambiguous across regions, so an IANA identifier or a numeric offset is required).
+than the proleptic Gregorian, years outside 1000 to 9999, sub-second detail finer
+than one nanosecond, an offset on a value that states no time of day, and any
+zone abbreviation such as `CST` (they are ambiguous across regions, so an IANA
+identifier or a numeric offset is required).
 
 ## Contributing
 
