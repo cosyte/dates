@@ -1,0 +1,55 @@
+name: CodeQL
+
+# Thin CALLER of the org reusable CodeQL analysis. The steps (the CodeQL database, the query
+# suite, the SARIF upload) are defined once in `cosyte/.github` and are deliberately NOT
+# reimplemented here, exactly as `scorecard.yml` beside this file calls its own reusable.
+#
+# ALL THREE PERMISSIONS ON THE JOB ARE REQUIRED, and the reason is the same one `scorecard.yml`
+# states: a called workflow can only DOWNGRADE the caller's token, never escalate it, so
+# anything the reusable declares has to be granted here or GitHub rejects the workflow at
+# STARTUP, before a single step runs. A startup failure here is this block, not a flake.
+# `.github/CI.md` recorded the same three under "the org reusables this repo does NOT call
+# yet" before this file existed.
+#
+# A PUBLISHED REFERENCE, NOT `@main`, AND THAT IS A DEPARTURE FROM `scorecard.yml`. `@main` is a
+# branch, so it delivers every later change made in `cosyte/.github` on that repository's clock
+# rather than this one's, reviewed by nobody here. The reference below names one commit
+# (`f29e9cc83cac4bd5fc73a68cefa22f136cd39608`) and never names another, so nothing reaches this
+# repo until this line is edited. `cosyte/.github`'s own README and the header of the reusable
+# both ask callers for this form; the newest reference is on that repo's releases page, and each
+# release's notes say what a caller adopting it has to act on. The note for this one lists only
+# `release.yml` changes, which this caller does not use.
+#
+# NO INPUTS, BY DEFAULT RATHER THAN BY OMISSION. The reusable defaults `languages` to
+# `["javascript-typescript"]` and `queries` to `security-and-quality`. `src/` is TypeScript, so
+# the default language extracts a database rather than failing, and neither default is one this
+# repo has a reason to override. Passing them explicitly would be a second copy of a value owned
+# in `cosyte/.github`.
+#
+# ONE-WAY DOOR, DECLARED RATHER THAN DISCOVERED, on the same axis `scorecard.yml` records for
+# its `publish-results: false`: `cosyte/dates` is PUBLIC and this workflow uploads a SARIF
+# analysis into its Security tab. Deleting this file later stops new analyses; it does not
+# retract an alert history already written.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so a `security-and-quality` suite that grows a new query still reaches code that
+    # has not changed. Offset from the Tuesday cron in `scorecard.yml` rather than sharing it.
+    - cron: "41 4 * * 3"
+
+permissions:
+  contents: read
+
+jobs:
+  codeql:
+    # This block REPLACES the workflow-level one for this job rather than adding to it, so all
+    # three are named here even though `contents: read` appears above.
+    permissions:
+      security-events: write # upload the SARIF to this repository's Security tab
+      contents: read # required to resolve the reusable and check the tree out
+      actions: read # the reusable's own `analyze` job declares it
+    uses: cosyte/.github/.github/workflows/codeql.yml@workflows-2026-09-04-f29e9cc83cac
