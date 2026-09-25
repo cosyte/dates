@@ -25,12 +25,23 @@ const manifest = JSON.parse(
 
 // Criterion: the manifest declares the package identity.
 describe('package identity', () => {
-  it('declares the settled name, version, licence, module format and engine floor', () => {
+  it('declares the settled name, licence, module format and engine floor', () => {
     expect(manifest.name).toBe('@cosyte/dates');
-    expect(manifest.version).toBe('0.1.0');
     expect(manifest.license).toBe('MIT');
     expect(manifest.type).toBe('module');
     expect(manifest.engines?.['node']).toBe('>=22.0.0');
+  });
+
+  // The version is written by the release (`changeset version`), never by hand, so it is held to
+  // the changelog that same release writes rather than to a literal. A literal here fails the
+  // "Version Packages" pull request that ships the next version. `0.0.0` is the one version with no
+  // changelog section, because nothing is ever released at it.
+  it('declares a plain release version that CHANGELOG.md records', () => {
+    expect(manifest.version).toMatch(/^\d+\.\d+\.\d+$/);
+    if (manifest.version !== '0.0.0') {
+      const changelog = readFileSync(path.join(packageRoot, 'CHANGELOG.md'), 'utf8');
+      expect(changelog.split('\n')).toContain(`## ${manifest.version ?? ''}`);
+    }
   });
 
   it('carries a full MIT licence text naming the copyright owner', () => {

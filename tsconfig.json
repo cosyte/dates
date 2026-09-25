@@ -17,7 +17,10 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@cosyte/dates": ["./src/index.ts"]
+    }
   },
-  "include": ["src", "test", "tsup.config.ts", "vitest.config.ts"]
+  "include": ["src", "test", "examples", "scripts/**/*.ts", "tsup.config.ts", "vitest.config.ts"]
 }
