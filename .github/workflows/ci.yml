@@ -65,6 +65,11 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      # The typed-exports gate the release pipeline runs before it publishes, run on every pull
+      # request as well, so a change that breaks how the types resolve is red before it merges.
+      - name: Types resolve (attw)
+        run: pnpm run attw
+
       - name: Typecheck
         run: pnpm run typecheck
 

@@ -35,29 +35,42 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=22.0.0"
   },
   "packageManager": "pnpm@10.34.5",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "tsup",
+    "changeset": "changeset",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.{ts,json,md,yml}\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"*.{ts,json,md,yml}\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"docs-content/**/*.{md,json}\" \"*.{ts,json,md,yml}\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"docs-content/**/*.{md,json}\" \"*.{ts,json,md,yml}\"",
     "test": "vitest run",
     "test:tz": "TZ=UTC vitest run && TZ=Pacific/Kiritimati vitest run",
-    "check:no-emdash": "bash scripts/check-no-emdash.sh"
+    "clean": "rm -rf dist coverage .tmp dist-artifacts",
+    "attw": "node scripts/attw.mjs --profile esm-only",
+    "pack:docs": "bash scripts/build-docs-artifacts.sh",
+    "check:no-emdash": "bash scripts/check-no-emdash.sh",
+    "check:no-internal-refs": "node scripts/check-no-internal-refs.mjs",
+    "version": "changeset version && prettier --write package.json CHANGELOG.md",
+    "release": "changeset publish",
+    "prepublishOnly": "pnpm clean && pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm attw"
   },
   "dependencies": {
     "temporal-polyfill": "1.0.4"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "0.18.4",
+    "@changesets/cli": "2.31.0",
+    "@cosyte/script-utils": "0.1.1",
     "@eslint/js": "10.0.1",
     "@types/node": "22.20.1",
     "eslint": "10.9.1",

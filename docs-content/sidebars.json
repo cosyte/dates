@@ -1,0 +1,26 @@
+{
+  "docs": [
+    "intro",
+    {
+      "type": "category",
+      "label": "Installation",
+      "items": ["installation"]
+    },
+    {
+      "type": "category",
+      "label": "Quickstart",
+      "items": ["quickstart"]
+    },
+    {
+      "type": "category",
+      "label": "Core Concepts",
+      "collapsed": false,
+      "items": ["concepts-precision", "concepts-zones"]
+    },
+    {
+      "type": "category",
+      "label": "Troubleshooting",
+      "items": ["troubleshooting"]
+    }
+  ]
+}

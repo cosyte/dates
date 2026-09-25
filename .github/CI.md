@@ -14,9 +14,12 @@ no gate: it blocks the very pull requests that would fix it.
 
 | workflow | trigger | what it is |
 |---|---|---|
-| `.github/workflows/ci.yml` | push to `main`, pull request to `main` | The gate. One job, `verify`: install from the frozen lockfile, build, typecheck, lint, format check, the test suite, the suite again under a second host time zone, and the em-dash scan. |
+| `.github/workflows/ci.yml` | push to `main`, pull request to `main` | The gate. One job, `verify`: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), typecheck, lint, format check, the test suite, the suite again under a second host time zone, and the em-dash scan. |
 | `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Repo-local gate. Scans every tracked file, plus the pull request's own title, body and commit messages, for U+2014. |
 | `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of `cosyte/.github/.github/workflows/scorecard.yml@main`. Supply-chain analysis, SARIF into the Security tab. |
+| `.github/workflows/codeql.yml` | push to `main`, pull request to `main`, weekly cron | Thin caller of the org CodeQL reusable at a published reference. |
+| `.github/workflows/no-internal-refs.yml` | push to `main`, pull request to `main` | Thin caller of the org public-surface gate (installing variant) at a published reference. Runs `pnpm check:no-internal-refs` over the README, `docs-content/`, the npm description and keywords, and the `src/` doc comments. |
+| `.github/workflows/release.yml` | push to `main` | Thin caller of `cosyte/.github/.github/workflows/release.yml@main`: Changesets opens or refreshes the "Version Packages" pull request, and merging that pull request publishes to npm behind the `release` environment. See "The release path" below. |
 
 `ci.yml` is ONE JOB on purpose. The thing that reads this repo's health asks
 whether `dates` is green, so the workflow reports a single conclusive status
@@ -45,6 +48,28 @@ reasoning is written out in the workflow file itself.
 There is no branch ruleset and no required status check on this repo. See the
 last section.
 
+## The release path
+
+`release.yml` calls the same shared pipeline, at the same reference, as every other `@cosyte/*`
+package. A push to `main` runs its `version` job, which checks that this repository's `release`
+environment is a real human gate (a required reviewer and a deployment branch policy limited to
+`main`), runs `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` and `pnpm attw`, and then:
+
+- with changesets pending under `.changeset/`, opens or refreshes the "Version Packages" pull
+  request, which runs `pnpm run version` (`changeset version`, then Prettier over `package.json` and
+  the generated `CHANGELOG.md`);
+- on the commit that pull request lands, derives the GitHub release notes from the changesets it
+  consumed, checks that `CHANGELOG.md` carries a `## <version>` section, and hands the publish to
+  the `release` job, which waits in the `release` environment until a reviewer approves it.
+
+The publish itself runs `pnpm run release` (`changeset publish`), then `pnpm pack:docs`, which
+writes `dist-artifacts/docs-content.tar.gz` (the pages under `docs-content/`) and
+`dist-artifacts/source.tar.gz` (`src/`, `package.json` and `tsconfig.json`) for docs.cosyte.com and
+attaches both to the GitHub release.
+
+`attw` runs with `--profile esm-only`, because this package ships no CommonJS build by decision; the
+CommonJS resolutions are not ones it promises.
+
 ## The org reusables this repo does NOT call yet
 
 Each row names the precondition that unblocks it, and whether that precondition
@@ -70,32 +95,6 @@ un-requires the gate (a job skipped by a job-level conditional still emits its
 check run, concluding `skipped`, which GitHub treats as successful). That is
 recorded in the reusable itself and repeated here because it is the kind of thing
 a caller gets wrong once.
-
-### `cosyte/.github/.github/workflows/codeql.yml@main`
-
-**Precondition (analyzable JavaScript or TypeScript source): MET. Not wired yet.**
-
-`src/` is TypeScript now, so the reusable's default `languages` of
-`["javascript-typescript"]` would extract a database rather than fail. Wiring it
-is separate work rather than a side effect of adding a build gate.
-
-When it is wired, the caller needs `security-events: write`, `contents: read` and
-`actions: read`, because a called workflow can only downgrade the caller's token.
-And there is a repo-wide invariant to respect on the other side: every
-`github/codeql-action/*` pin in `cosyte/.github` moves together in one commit,
-which includes the `upload-sarif` used by the scorecard reusable this repo
-already calls.
-
-### The release reusable (`release.yml` in `cosyte/.github`)
-
-**Precondition: this package is publishable, which means a manifest, a version, a
-build that produces the published artifact, and a decision that it should go to
-the registry at all. The first three are met. The fourth is not.**
-
-`0.1.0` is set in the manifest, but the release rides a coordinated batch with
-the eight parsers and `config`, and that decision is not this repository's to
-make. Wiring a release path before there is a decision to release is how a broken
-version reaches a registry permanently, which the org has already paid for once.
 
 ### The drift-check reusable
 
