@@ -1,6 +1,6 @@
 {
   "name": "@cosyte/dates",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Date and time utilities for the @cosyte/* healthcare parsers: precision-preserving conversion and validation that never guesses a timezone.",
   "license": "MIT",
   "author": "Cosyte",
