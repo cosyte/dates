@@ -35,8 +35,9 @@ nobody has their date library chosen for them.
 
 **0.1.0. The public API is settled and safe to depend on.** The exported
 functions, the shape of `DateParts`, the issue codes and the error classes are
-what this package intends to keep, and a breaking change to any of them will
-come with a major version.
+what this package intends to keep. While the version is below 1.0.0, a breaking
+change to any of them ships in a new minor version, never a patch, and the
+changelog says what broke and what to do instead.
 
 Not covered at 0.1.0, and named so the boundary is not a surprise:
 
@@ -110,6 +111,10 @@ day 29 does not exist: February 2025 has 28 days, because 2025 is not a leap yea
 That output is identical under every host `TZ`, and
 `test/readme.test.ts` runs this exact block against the built package and
 compares it character for character.
+
+More runnable programs, one for each job this package does, are in
+[`examples/`](https://github.com/cosyte/dates/tree/main/examples), and the full
+guide is at [docs.cosyte.com/dates](https://docs.cosyte.com/dates).
 
 ## PHI and safety
 
@@ -188,8 +193,8 @@ identifier or a numeric offset is required).
 Issues and pull requests are welcome at
 [github.com/cosyte/dates](https://github.com/cosyte/dates). A contribution has
 to clear the same gate CI runs on every push: `pnpm run build`, `pnpm run
-typecheck`, `pnpm run lint`, `pnpm run test`, and
-`bash scripts/check-no-emdash.sh`. New behaviour needs a test, and anything
+attw`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run test`, `pnpm run
+examples`, and `bash scripts/check-no-emdash.sh`. New behaviour needs a test, and anything
 touching conversion needs one that pins the exact output rather than a shape.
 
 ## License

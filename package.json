@@ -1,12 +1,12 @@
 {
   "name": "@cosyte/dates",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Date and time utilities for the @cosyte/* healthcare parsers: precision-preserving conversion and validation that never guesses a timezone.",
   "license": "MIT",
   "author": "Cosyte",
   "type": "module",
   "sideEffects": false,
-  "homepage": "https://github.com/cosyte/dates#readme",
+  "homepage": "https://docs.cosyte.com/dates",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cosyte/dates.git"
@@ -19,10 +19,13 @@
     "datetime",
     "healthcare",
     "hl7",
+    "fhir",
     "temporal",
+    "iso-8601",
     "precision",
     "timezone",
-    "validation"
+    "validation",
+    "typescript"
   ],
   "exports": {
     ".": {
@@ -51,10 +54,11 @@
     "changeset": "changeset",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"docs-content/**/*.{md,json}\" \"*.{ts,json,md,yml}\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"docs-content/**/*.{md,json}\" \"*.{ts,json,md,yml}\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.{ts,mjs}\" \"examples/**/*.{ts,md}\" \"docs-content/**/*.{md,json}\" \"*.{ts,json,md,yml}\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.{ts,mjs}\" \"examples/**/*.{ts,md}\" \"docs-content/**/*.{md,json}\" \"*.{ts,json,md,yml}\"",
     "test": "vitest run",
     "test:tz": "TZ=UTC vitest run && TZ=Pacific/Kiritimati vitest run",
+    "examples": "tsx scripts/run-examples.ts",
     "clean": "rm -rf dist coverage .tmp dist-artifacts",
     "attw": "node scripts/attw.mjs --profile esm-only",
     "pack:docs": "bash scripts/build-docs-artifacts.sh",
@@ -76,6 +80,7 @@
     "eslint": "10.9.1",
     "prettier": "3.9.6",
     "tsup": "8.5.1",
+    "tsx": "4.21.0",
     "typescript": "5.9.3",
     "typescript-eslint": "8.68.0",
     "vitest": "4.1.11"

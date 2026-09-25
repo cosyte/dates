@@ -3,7 +3,16 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '.tmp/**'],
+    // `.cosyte-release-tooling/` is a checkout of cosyte/.github that the shared release workflow
+    // makes inside this working tree before it runs `pnpm lint`. It is not this repository's code.
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      '.tmp/**',
+      'dist-artifacts/**',
+      '.cosyte-release-tooling/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

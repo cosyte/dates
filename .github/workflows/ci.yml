@@ -70,6 +70,12 @@ jobs:
       - name: Types resolve (attw)
         run: pnpm run attw
 
+      # The programs under examples/ import the package by its name, which resolves through the
+      # package's own `exports` to the build above, and each one checks its own output. They run
+      # as a step of this job rather than a job of their own, to keep the single status above.
+      - name: Examples
+        run: pnpm run examples
+
       - name: Typecheck
         run: pnpm run typecheck
 
