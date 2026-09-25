@@ -1,0 +1,26 @@
+name: Public-surface gate
+
+# No internal project bookkeeping on a public surface: the README, the pages under `docs-content/`,
+# the npm description and keywords, and the doc comments that compile into the shipped type
+# declarations. The scan is `pnpm check:no-internal-refs`, a thin caller of the shared
+# `@cosyte/script-utils/internal-refs` engine, so it needs the dependencies installed: this calls the
+# INSTALLING variant of the shared gate, pinned to a published reference of cosyte/.github.
+#
+# The job id is the check context (`no-internal-refs / public-surface`), the same one every other
+# @cosyte/* package reports.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  no-internal-refs:
+    uses: cosyte/.github/.github/workflows/gate-no-internal-refs-install.yml@acaa6cbe1745e950837e61849ed84bf9e34fec68 # workflows-2026-09-22-acaa6cbe1745
+    permissions:
+      contents: read

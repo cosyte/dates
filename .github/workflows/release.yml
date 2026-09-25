@@ -1,0 +1,35 @@
+name: Release
+
+# Thin caller of the shared release pipeline: Changesets -> npm publish (provenance auto-enables when
+# this repo is public) -> docs artifacts -> GitHub release -> repository_dispatch to cosyte/docs.
+# Requires the NPM_TOKEN and DOCS_REPO_DISPATCH_TOKEN secrets (passed via `secrets: inherit`), and
+# RELEASE_PR_TOKEN so the "Version Packages" pull request it opens runs its checks.
+#
+# `@main`, the same reference every other @cosyte/* package's release caller names, so a release of
+# this package runs the same pipeline, with the same gates, as the rest of the suite.
+#
+# A RUN SITTING AT `waiting` IS THE HUMAN GATE, NOT A FAILURE. The shared pipeline's publishing job
+# runs in this repository's `release` environment, which carries a required reviewer and a
+# deployment branch policy limited to `main`. A release run parks there until a reviewer approves
+# it, and that approval is what publishes to npm. Never remove the reviewer, and never add an
+# `environment:` key to the job below: either would publish with nobody in the loop, and a published
+# version cannot be withdrawn.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    # Required. A called workflow can only downgrade the caller's token, never escalate it, so the
+    # calling job has to grant everything the shared pipeline declares. Short one scope and GitHub
+    # rejects the whole workflow at startup (no jobs, no logs).
+    permissions:
+      actions: read # the shared workflow reads this repository's `release` environment protection
+      contents: write # create the tag and the GitHub release
+      id-token: write # npm provenance
+      pull-requests: write # open the "Version Packages" PR
+    uses: cosyte/.github/.github/workflows/release.yml@main
+    with:
+      package-name: "@cosyte/dates"
+    secrets: inherit
