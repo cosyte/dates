@@ -33,6 +33,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # The nightly run, 05:49 UTC on main's latest commit. Odd minute: GitHub delays runs at the top of the hour, and each repo has its own.
+    - cron: "49 5 * * *"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

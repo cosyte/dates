@@ -14,7 +14,7 @@ no gate: it blocks the very pull requests that would fix it.
 
 | workflow | trigger | what it is |
 |---|---|---|
-| `.github/workflows/ci.yml` | push to `main`, pull request to `main` | The gate. One job, `verify`: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the test suite, the suite again under a second host time zone, and the em-dash scan. |
+| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the test suite, the suite again under a second host time zone, and the em-dash scan. |
 | `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Repo-local gate. Scans every tracked file, plus the pull request's own title, body and commit messages, for U+2014. |
 | `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of `cosyte/.github/.github/workflows/scorecard.yml@main`. Supply-chain analysis, SARIF into the Security tab. |
 | `.github/workflows/codeql.yml` | push to `main`, pull request to `main`, weekly cron | Thin caller of the org CodeQL reusable at a published reference. |
@@ -45,7 +45,19 @@ One further note on the scorecard caller: it passes `publish-results: false`,
 which is the one place it differs from the hl7 and `github-profile` callers. The
 reasoning is written out in the workflow file itself.
 
-There is no branch ruleset and no required status check on this repo. See the
+`ci.yml` also runs every night at 05:49 UTC (cron `49 5 * * *`), on the latest
+commit of `main`, so a `main` that goes red without a push (a dependency, a
+runner image, a date that expired, a shared workflow) is found the next morning
+rather than on the next pull request. Each repo has its own minute so the nightly
+runs do not all start together, and none is on the hour, because GitHub delays
+scheduled runs at high load, which includes the start of every hour. The `verify` job
+reads nothing from a pull request, so a scheduled run is the same ladder a push
+runs. It shares the push runs' concurrency group, so a push to `main` that lands
+during a nightly run cancels it and the push run tests the newer commit.
+`workflow_dispatch` starts the same run by hand on any branch:
+`gh workflow run ci.yml -R cosyte/dates --ref <branch>`.
+
+`main` has a branch ruleset, `ci-required-checks` (since 2026-10-08). See the
 last section.
 
 ## The release path
@@ -107,14 +119,26 @@ SECOND, LIGHTER baseline is intended for the repos outside those 13, this one
 included, and drift-check runs advisory during the migration before it flips to
 gating. So the baseline this repo will be measured against does not exist yet.
 
-## Adding a branch ruleset
+## The branch ruleset
 
-**Precondition: the workflow whose context you want to require has completed at
-least one run on `main`.**
+Since 2026-10-08 a branch ruleset, `ci-required-checks`, applies to `main` (the
+default branch). It requires a pull request, linear history, no deletion and no
+force push, and four status checks:
 
-A required status check naming a context that has never been reported blocks
-every pull request indefinitely and shows no reason. `ci.yml` and
-`no-emdash.yml` each become a sound candidate after their first run on `main`.
-One caveat carried over from the em-dash gate itself: require the workflow, and
-understand that its PR-text half is pull-request only. On a push to `main` that
-step is skipped by design, because by then the message is already written.
+| required check | from |
+|---|---|
+| `verify` | `.github/workflows/ci.yml` |
+| `no-emdash` | `.github/workflows/no-emdash.yml` |
+| `no-internal-refs / public-surface` | `.github/workflows/no-internal-refs.yml` |
+| `codeql / analyze (javascript-typescript)` | `.github/workflows/codeql.yml` |
+
+Read it with `gh api repos/cosyte/dates/rulesets`. Job names are the required
+contexts, so renaming or dropping one of these jobs strands every pull request.
+
+**Adding a check to it has one precondition: the workflow whose context you want
+to require has completed at least one run on `main`.** A required status check
+naming a context that has never been reported blocks every pull request
+indefinitely and shows no reason. One caveat carried over from the em-dash gate
+itself: `no-emdash` is required as a whole, and its PR-text half is pull-request
+only. On a push to `main` that step is skipped by design, because by then the
+message is already written.
