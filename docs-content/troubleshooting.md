@@ -2,6 +2,7 @@
 id: troubleshooting
 title: Troubleshooting
 sidebar_position: 1
+description: "What each error class and issue code means, and what to do about it."
 ---
 
 # Troubleshooting
@@ -35,7 +36,7 @@ try {
 
 ## Issue codes
 
-`validateParts()` returns one issue per fault, each with a `component`, a `code` and a `message`:
+`validateParts()` returns one issue per fault, each with a `component`, a `code`, and a `message`:
 
 | code                         | meaning                                                                    |
 | ---------------------------- | -------------------------------------------------------------------------- |
@@ -57,5 +58,5 @@ A validation message quotes the one component at fault and its value (`month mus
 1-12 ...; received the number 13`). It never assembles the full date into the message. A date of birth
 is PHI, so decide whether to log even one component before you log a message.
 
-The package itself writes nothing: no logging, no telemetry, no files and no network, on any code
+The package itself writes nothing: no logging, no telemetry, no files, and no network, on any code
 path.

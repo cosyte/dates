@@ -2,6 +2,7 @@
 id: quickstart
 title: Quickstart
 sidebar_position: 1
+description: "Validate a date-parts value, render it at its own precision, and convert it to Temporal in one short program."
 ---
 
 # Quickstart

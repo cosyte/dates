@@ -2,6 +2,7 @@
 id: installation
 title: Installation
 sidebar_position: 1
+description: "Install @cosyte/dates, check the Node.js versions it supports, and see its one runtime dependency."
 ---
 
 # Installation
@@ -14,7 +15,7 @@ or `pnpm add @cosyte/dates`.
 
 ## Requirements
 
-- **Node.js 22 or newer.**
+- **Node.js 22 or later, tested on 22 and 24.**
 - **ESM only.** The package ships no CommonJS build, so load it with `import`; `require()` will not
   load it.
 

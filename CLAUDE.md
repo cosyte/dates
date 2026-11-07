@@ -5,6 +5,8 @@ date parts the `@cosyte/*` parsers return. It is tooling beside the parsers, not
 Node 22 or later, one runtime dependency (`temporal-polyfill`). Code is in `src/`, tests in `test/`,
 runnable programs in `examples/`, and the docs.cosyte.com pages in `docs-content/`.
 
+@AGENTS.md
+
 ## Gate
 
 A PR is green when four required checks pass: `verify` (`.github/workflows/ci.yml`), `no-emdash`,

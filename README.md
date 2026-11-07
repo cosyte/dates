@@ -1,7 +1,7 @@
 <a href="https://cosyte.com">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://cosyte.com/tile/cosyte-lockup-tile-on-dark-1200x300.png">
-    <img alt="Cosyte: a plus mark set in two overlapping rounded squares, one solid and one outlined, beside the Cosyte wordmark" src="https://cosyte.com/tile/cosyte-lockup-tile-on-light-1200x300.png">
+    <img alt="The Cosyte logo on its own white ground: the icon beside the word Cosyte." src="https://cosyte.com/tile/cosyte-lockup-tile-on-light-1200x300.png">
   </picture>
 </a>
 
@@ -24,29 +24,29 @@ value with no offset is the sender's local time by the standard's own words. The
 parsers preserve exactly that and refuse to invent the rest, which is why they
 carry no date library at all.
 
-That fidelity leaves a gap: a developer still has to validate, compare and
+That fidelity leaves a gap: a developer still has to validate, compare, and
 convert those values, and the obvious tools all model an absolute instant. Reach
-for `new Date('1988')` and you have silently acquired a month, a day, a midnight
+for `new Date('1988')` and you have silently acquired a month, a day, a midnight,
 and a timezone that nobody sent you. This package is the opt-in companion that
 closes the gap without any of that, so the parsers stay zero-dependency and
 nobody has their date library chosen for them.
 
 ## Status
 
-**0.1.0. The public API is settled and safe to depend on.** The exported
-functions, the shape of `DateParts`, the issue codes and the error classes are
+**The 0.1 line. The public API is settled and safe to depend on.** The exported
+functions, the shape of `DateParts`, the issue codes, and the error classes are
 what this package intends to keep. While the version is below 1.0.0, a breaking
 change to any of them ships in a new minor version, never a patch, and the
 changelog says what broke and what to do instead.
 
-Not covered at 0.1.0, and named so the boundary is not a surprise:
+Not covered on the 0.1 line, and named so the boundary is not a surprise:
 
 - **No parsing of vendor date text.** This package consumes parts that a
   `@cosyte/*` parser already produced. Format strings and vendor token grammars
   live in the parsers' profile systems, not here.
 - **No two-digit years, ever.** `year` must be four digits. There is no century
   window, no pivot, and no configuration that adds one.
-- **No arithmetic, comparison or formatting helpers.** Convert with
+- **No arithmetic, comparison, or formatting helpers.** Convert with
   `toTemporal()` and use Temporal for the rest.
 - **No locale-aware or human-readable output.** `toISO()` renders ISO 8601 and
   nothing else.
@@ -59,8 +59,8 @@ Not covered at 0.1.0, and named so the boundary is not a surprise:
 pnpm add @cosyte/dates
 ```
 
-Node `>=22.0.0`. ESM only: this package ships no CommonJS build, so `require()`
-will not load it.
+Node.js 22 or later, tested on 22 and 24. ESM only: this package ships no
+CommonJS build, so `require()` will not load it.
 
 It carries exactly one runtime dependency, [`temporal-polyfill`][polyfill],
 because `Temporal.PlainDate` is the only widely available type that can hold a
@@ -129,7 +129,7 @@ package does about that:
   public entry point in a child process and asserting both streams are empty and
   that nothing was written to the working directory.
 - **It retains nothing.** Every function is pure and holds no state between
-  calls. A value passed in is not cached, memoised or referenced after return.
+  calls. A value passed in is not cached, memoized, or referenced after return.
 - **It refuses rather than guesses.** No century window, no host timezone
   fallback, no midnight for a date with no time, no picking one side of a
   daylight-saving transition, no rounding a sub-second value to make it fit.
@@ -149,7 +149,7 @@ the converted value goes next. This package is a pure function in the middle.
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `validateParts(value)`             | Checks a value against the contract. Never throws. Returns every fault, not just the first.                                                                                |
 | `isValidParts(value)`              | The same check as a type guard.                                                                                                                                            |
-| `assertValidParts(value)`          | Returns the recognised components, or throws `DatePartsError`.                                                                                                             |
+| `assertValidParts(value)`          | Returns the recognized components, or throws `DatePartsError`.                                                                                                             |
 | `precisionOf(value)`               | The least significant present component: `'year'` through `'fraction'`.                                                                                                    |
 | `toISO(value)`                     | ISO 8601 at the value's own precision. `1988`, `1988-05`, `1988-05-07T13:45+05:30`.                                                                                        |
 | `toTemporal(value)`                | The narrowest Temporal type that carries everything the value states: `PlainYearMonth`, `PlainDate`, `PlainDateTime`, or `ZonedDateTime` when the value carries an offset. |
@@ -192,10 +192,9 @@ identifier or a numeric offset is required).
 
 Issues and pull requests are welcome at
 [github.com/cosyte/dates](https://github.com/cosyte/dates). A contribution has
-to clear the same gate CI runs on every push: `pnpm run build`, `pnpm run
-attw`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run test`, `pnpm run
-examples`, and `bash scripts/check-no-emdash.sh`. New behaviour needs a test, and anything
-touching conversion needs one that pins the exact output rather than a shape.
+to clear the same gate CI runs on every push; [`AGENTS.md`](https://github.com/cosyte/dates/blob/main/AGENTS.md)
+lists the commands. New behavior needs a test, and anything touching conversion
+needs one that pins the exact output rather than a shape.
 
 ## License
 

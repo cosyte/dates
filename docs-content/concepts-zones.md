@@ -2,6 +2,7 @@
 id: concepts-zones
 title: Zones and instants
 sidebar_position: 2
+description: "How a value becomes an absolute instant: from its own offset or a zone you state, never from a guess."
 ---
 
 # Zones and instants
