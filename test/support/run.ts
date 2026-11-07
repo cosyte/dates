@@ -1,8 +1,8 @@
-import { spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
+import { spawnSync } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
 
-import { packageRoot, scratchDir } from './paths.js';
+import { packageRoot, scratchDir } from "./paths.js";
 
 export interface RunResult {
   readonly stdout: string;
@@ -26,12 +26,12 @@ export function runBuiltPackageScript(
 ): RunResult {
   mkdirSync(scratchDir, { recursive: true });
   const file = path.join(scratchDir, fileName);
-  writeFileSync(file, source, 'utf8');
+  writeFileSync(file, source, "utf8");
 
   const result = spawnSync(process.execPath, [file], {
     cwd: options.cwd ?? packageRoot,
     env: { ...process.env, ...options.env },
-    encoding: 'utf8',
+    encoding: "utf8",
   });
 
   if (result.error) throw result.error;

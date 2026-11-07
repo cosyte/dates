@@ -1,15 +1,15 @@
-import { Temporal } from 'temporal-polyfill';
+import { Temporal } from "temporal-polyfill";
 
 import {
   AmbiguousLocalTimeError,
   DatePartsError,
   MissingZoneError,
   PrecisionError,
-} from './errors.js';
-import { readFraction } from './fraction.js';
-import { PRECISION_LADDER } from './types.js';
-import type { DateParts, Precision, ZoneOptions } from './types.js';
-import { validateParts } from './validate.js';
+} from "./errors.js";
+import { readFraction } from "./fraction.js";
+import { PRECISION_LADDER } from "./types.js";
+import type { DateParts, Precision, ZoneOptions } from "./types.js";
+import { validateParts } from "./validate.js";
 
 /** The narrowest Temporal type that carries everything a value states, and nothing more. */
 export type TemporalValue =
@@ -31,7 +31,7 @@ function atLeast(precision: Precision, floor: Precision): boolean {
 }
 
 function pad(value: number, width: number): string {
-  return String(value).padStart(width, '0');
+  return String(value).padStart(width, "0");
 }
 
 /**
@@ -42,7 +42,7 @@ function pad(value: number, width: number): string {
  * ABSENT offset renders nothing at all, because unknown is not UTC.
  */
 function formatOffset(offsetMinutes: number): string {
-  const sign = offsetMinutes < 0 ? '-' : '+';
+  const sign = offsetMinutes < 0 ? "-" : "+";
   const absolute = Math.abs(offsetMinutes);
   return `${sign}${pad(Math.trunc(absolute / 60), 2)}:${pad(absolute % 60, 2)}`;
 }
@@ -66,8 +66,8 @@ function nanosecondsOf(fraction: number): number {
 
 /** Sub-second digits, trimmed of trailing zeros but never to nothing. */
 function formatFraction(fraction: number): string {
-  const digits = pad(nanosecondsOf(fraction), 9).replace(/0+$/, '');
-  return `.${digits === '' ? '0' : digits}`;
+  const digits = pad(nanosecondsOf(fraction), 9).replace(/0+$/, "");
+  return `.${digits === "" ? "0" : digits}`;
 }
 
 function subSecondFields(fraction: number | undefined): {
@@ -94,29 +94,37 @@ function subSecondFields(fraction: number | undefined): {
  * The result is a pure function of the parts. It does not read the host clock or
  * the host time zone, so it is identical under every `TZ`.
  *
+ * @example
+ * ```ts
+ * toISO({ year: 1988 }); // '1988'
+ * toISO({ year: 2026, month: 3, day: 9, hour: 8 }); // '2026-03-09T08'
+ * toISO({ year: 2026, month: 3, day: 9, hour: 8, minute: 5, offsetMinutes: -300 });
+ * // '2026-03-09T08:05-05:00'
+ * ```
+ *
  * @throws {DatePartsError} if the value does not satisfy the contract.
  */
 export function toISO(value: unknown): string {
   const { parts, precision } = check(value);
-  const suffix = parts.offsetMinutes === undefined ? '' : formatOffset(parts.offsetMinutes);
+  const suffix = parts.offsetMinutes === undefined ? "" : formatOffset(parts.offsetMinutes);
 
   let out = pad(parts.year ?? 0, 4);
-  if (precision === 'year') return out;
+  if (precision === "year") return out;
 
   out += `-${pad(parts.month ?? 0, 2)}`;
-  if (precision === 'month') return out;
+  if (precision === "month") return out;
 
   out += `-${pad(parts.day ?? 0, 2)}`;
-  if (precision === 'day') return out;
+  if (precision === "day") return out;
 
   out += `T${pad(parts.hour ?? 0, 2)}`;
-  if (precision === 'hour') return out + suffix;
+  if (precision === "hour") return out + suffix;
 
   out += `:${pad(parts.minute ?? 0, 2)}`;
-  if (precision === 'minute') return out + suffix;
+  if (precision === "minute") return out + suffix;
 
   out += `:${pad(parts.second ?? 0, 2)}`;
-  if (precision === 'second') return out + suffix;
+  if (precision === "second") return out + suffix;
 
   out += formatFraction(parts.fraction ?? 0);
   return out + suffix;
@@ -142,15 +150,23 @@ export function toISO(value: unknown): string {
  * precision is still available from {@link precisionOf}; it is not lost, it just
  * cannot be carried by the returned object.
  *
+ * @example
+ * ```ts
+ * toTemporal({ year: 2026, month: 3 }).toString(); // '2026-03'
+ * toTemporal({ year: 2026, month: 3, day: 9 }).toString(); // '2026-03-09'
+ * toTemporal({ year: 2026, month: 3, day: 9, hour: 8, minute: 5 }).toString();
+ * // '2026-03-09T08:05:00'
+ * ```
+ *
  * @throws {DatePartsError} if the value does not satisfy the contract.
  * @throws {PrecisionError} for a year-only value.
  */
 export function toTemporal(value: unknown): TemporalValue {
   const { parts, precision } = check(value);
 
-  if (precision === 'year') {
+  if (precision === "year") {
     throw new PrecisionError(
-      'Temporal has no year-only type, and this package will not invent a month to reach one. Use toISO() to render a year-precision value, or precisionOf() to branch before converting',
+      "Temporal has no year-only type, and this package will not invent a month to reach one. Use toISO() to render a year-precision value, or precisionOf() to branch before converting",
       precision,
     );
   }
@@ -158,13 +174,13 @@ export function toTemporal(value: unknown): TemporalValue {
   const year = parts.year ?? 0;
   const month = parts.month ?? 0;
 
-  if (precision === 'month') {
-    return Temporal.PlainYearMonth.from({ year, month }, { overflow: 'reject' });
+  if (precision === "month") {
+    return Temporal.PlainYearMonth.from({ year, month }, { overflow: "reject" });
   }
 
   const day = parts.day ?? 0;
-  if (precision === 'day') {
-    return Temporal.PlainDate.from({ year, month, day }, { overflow: 'reject' });
+  if (precision === "day") {
+    return Temporal.PlainDate.from({ year, month, day }, { overflow: "reject" });
   }
 
   const fields = {
@@ -180,11 +196,11 @@ export function toTemporal(value: unknown): TemporalValue {
   if (parts.offsetMinutes !== undefined) {
     return Temporal.ZonedDateTime.from(
       { ...fields, timeZone: formatOffset(parts.offsetMinutes) },
-      { overflow: 'reject' },
+      { overflow: "reject" },
     );
   }
 
-  return Temporal.PlainDateTime.from(fields, { overflow: 'reject' });
+  return Temporal.PlainDateTime.from(fields, { overflow: "reject" });
 }
 
 function assertKnownTimeZone(timeZone: string): void {
@@ -219,7 +235,7 @@ function resolveTimeZone(parts: DateParts, options: ZoneOptions | undefined): st
 
   if (options?.timeZone !== undefined && options.offsetMinutes !== undefined) {
     throw new TypeError(
-      'supply either timeZone or offsetMinutes, not both: two answers to one question is a guess waiting to happen',
+      "supply either timeZone or offsetMinutes, not both: two answers to one question is a guess waiting to happen",
     );
   }
 
@@ -234,7 +250,7 @@ function resolveTimeZone(parts: DateParts, options: ZoneOptions | undefined): st
   }
 
   throw new MissingZoneError(
-    'this value carries no offsetMinutes, and no zone was supplied: an absolute instant needs a zone, and this package supplies none. Pass { timeZone } or { offsetMinutes }. It will not fall back to the host time zone, to UTC, or to any other default, because a fallback turns an unknown offset into a plausible wrong instant',
+    "this value carries no offsetMinutes, and no zone was supplied: an absolute instant needs a zone, and this package supplies none. Pass { timeZone } or { offsetMinutes }. It will not fall back to the host time zone, to UTC, or to any other default, because a fallback turns an unknown offset into a plausible wrong instant",
   );
 }
 
@@ -258,11 +274,17 @@ function resolveTimeZone(parts: DateParts, options: ZoneOptions | undefined): st
  * @throws {PrecisionError} if the value states no time of day.
  * @throws {MissingZoneError} if nothing says which zone applies.
  * @throws {AmbiguousLocalTimeError} at a daylight-saving transition.
+ * @example
+ * ```ts
+ * const local = { year: 2026, month: 3, day: 9, hour: 8, minute: 5 };
+ * toZonedDateTime(local, { timeZone: "America/New_York" }).toString();
+ * // '2026-03-09T08:05:00-04:00[America/New_York]'
+ * ```
  */
 export function toZonedDateTime(value: unknown, options?: ZoneOptions): Temporal.ZonedDateTime {
   const { parts, precision } = check(value);
 
-  if (!atLeast(precision, 'hour')) {
+  if (!atLeast(precision, "hour")) {
     // A value below hour precision that also states no zone is missing BOTH, and
     // hearing about them one at a time is how a caller fixes one and comes back.
     // The precision is what is reported, because supplying a zone would not make
@@ -276,8 +298,8 @@ export function toZonedDateTime(value: unknown, options?: ZoneOptions): Temporal
     throw new PrecisionError(
       `an absolute instant needs a time of day, and this value has ${precision} precision. Supplying one would mean inventing components the value does not carry. Use toTemporal() for the calendar value${
         alsoNoZone
-          ? '. The zone is missing too: this value carries no offsetMinutes and no { timeZone } or { offsetMinutes } was supplied, and neither the host time zone nor UTC will be used in their place'
-          : ''
+          ? ". The zone is missing too: this value carries no offsetMinutes and no { timeZone } or { offsetMinutes } was supplied, and neither the host time zone nor UTC will be used in their place"
+          : ""
       }`,
       precision,
     );
@@ -294,7 +316,7 @@ export function toZonedDateTime(value: unknown, options?: ZoneOptions): Temporal
       second: parts.second ?? 0,
       ...subSecondFields(parts.fraction),
     },
-    { overflow: 'reject' },
+    { overflow: "reject" },
   );
 
   // Ambiguity is established by ASKING, not by catching. The two disambiguation
@@ -302,8 +324,8 @@ export function toZonedDateTime(value: unknown, options?: ZoneOptions): Temporal
   // exactly the times a transition skips or repeats. Reading the answer off a
   // thrown message would instead relabel any other failure as a transition, and
   // a fixed offset zone, which has no transitions at all, would be told it did.
-  const earliest = local.toZonedDateTime(timeZone, { disambiguation: 'earlier' });
-  const latest = local.toZonedDateTime(timeZone, { disambiguation: 'later' });
+  const earliest = local.toZonedDateTime(timeZone, { disambiguation: "earlier" });
+  const latest = local.toZonedDateTime(timeZone, { disambiguation: "later" });
 
   if (!earliest.equals(latest)) {
     // A repeated local time still reads back as itself, at two offsets. A skipped
@@ -324,6 +346,13 @@ export function toZonedDateTime(value: unknown, options?: ZoneOptions): Temporal
  *
  * Same requirements as {@link toZonedDateTime}: a time of day, and a zone that
  * something states. Nothing is defaulted.
+ *
+ * @example
+ * ```ts
+ * const local = { year: 2026, month: 3, day: 9, hour: 8, minute: 5 };
+ * toInstant(local, { timeZone: "America/New_York" }).toString(); // '2026-03-09T12:05:00Z'
+ * toInstant({ ...local, offsetMinutes: -300 }).toString(); // '2026-03-09T13:05:00Z'
+ * ```
  */
 export function toInstant(value: unknown, options?: ZoneOptions): Temporal.Instant {
   return toZonedDateTime(value, options).toInstant();

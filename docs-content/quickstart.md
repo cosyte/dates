@@ -10,19 +10,19 @@ A complete program. Save it as `quickstart.mjs` in a project where `@cosyte/date
 run it with `node quickstart.mjs`.
 
 ```js
-import { precisionOf, toISO, toInstant, toTemporal, validateParts } from '@cosyte/dates';
+import { precisionOf, toISO, toInstant, toTemporal, validateParts } from "@cosyte/dates";
 
 // A date of birth that arrived as a year and nothing more. It stays a year.
 const birthYear = { year: 1988 };
-console.log(toISO(birthYear), '| precision:', precisionOf(birthYear));
+console.log(toISO(birthYear), "| precision:", precisionOf(birthYear));
 
 // A calendar date. No midnight is invented, and no zone is attached.
 const admitted = { year: 1988, month: 5, day: 7 };
-console.log(toISO(admitted), '| Temporal:', toTemporal(admitted).constructor.name);
+console.log(toISO(admitted), "| Temporal:", toTemporal(admitted).constructor.name);
 
 // A timestamp whose sender stated its offset. The offset is kept exactly.
 const collected = { year: 1988, month: 5, day: 7, hour: 13, minute: 45, offsetMinutes: 330 };
-console.log(toISO(collected), '->', toInstant(collected).toString());
+console.log(toISO(collected), "->", toInstant(collected).toString());
 
 // The same timestamp with an unknown offset. Nothing guesses one.
 const unknownZone = { year: 1988, month: 5, day: 7, hour: 13, minute: 45 };
@@ -34,7 +34,7 @@ try {
 
 // A date that does not exist is refused, and says which rule it broke.
 const result = validateParts({ year: 2025, month: 2, day: 29 });
-console.log(result.valid ? 'valid' : result.issues[0].message);
+console.log(result.valid ? "valid" : result.issues[0].message);
 ```
 
 It prints:

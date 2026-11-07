@@ -37,50 +37,50 @@ export interface DateParts {
 
 /** The precision ladder, most significant first. */
 export const PRECISION_LADDER = [
-  'year',
-  'month',
-  'day',
-  'hour',
-  'minute',
-  'second',
-  'fraction',
+  "year",
+  "month",
+  "day",
+  "hour",
+  "minute",
+  "second",
+  "fraction",
 ] as const;
 
 /** The least significant component present in a value IS its precision. */
 export type Precision = (typeof PRECISION_LADDER)[number];
 
 /** Every component name the contract defines. */
-export type PartName = Precision | 'offsetMinutes';
+export type PartName = Precision | "offsetMinutes";
 
 /** What a diagnostic says went wrong. */
 export type IssueCode =
   /** The argument is not a date-parts object at all. */
-  | 'not-a-parts-object'
+  | "not-a-parts-object"
   /** A more significant component is absent while a less significant one is present. */
-  | 'missing-component'
+  | "missing-component"
   /** Reading the component threw, so its value could not be seen at all. */
-  | 'unreadable'
+  | "unreadable"
   /** The component is present but is not a number. */
-  | 'not-a-number'
+  | "not-a-number"
   /** The component is a number but is `NaN` or infinite. */
-  | 'not-finite'
+  | "not-finite"
   /** The component must be a whole number and is not. */
-  | 'not-an-integer'
+  | "not-an-integer"
   /** The component is outside the range the contract gives it. */
-  | 'out-of-range'
+  | "out-of-range"
   /** The year is not four digits. No century window is ever applied. */
-  | 'year-not-four-digits'
+  | "year-not-four-digits"
   /** The sub-second value carries detail below nanosecond resolution. */
-  | 'finer-than-nanosecond'
+  | "finer-than-nanosecond"
   /** An offset was given for a value that states no time of day. */
-  | 'offset-without-time-of-day'
+  | "offset-without-time-of-day"
   /** The components are each in range but together denote no real date. */
-  | 'no-such-calendar-date';
+  | "no-such-calendar-date";
 
 /** One thing wrong with one component, named. */
 export interface ValidationIssue {
   /** The component at fault, or `'value'` when the argument itself is wrong. */
-  readonly component: PartName | 'value';
+  readonly component: PartName | "value";
   readonly code: IssueCode;
   /** Human-readable, names the component and the range or calendar rule broken. */
   readonly message: string;
@@ -99,6 +99,7 @@ export interface InvalidPartsResult {
   readonly issues: readonly ValidationIssue[];
 }
 
+/** What `validateParts()` returns: a valid value with its precision, or every fault found. */
 export type ValidationResult = ValidPartsResult | InvalidPartsResult;
 
 /**

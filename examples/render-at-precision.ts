@@ -10,19 +10,19 @@
  * mismatch.
  */
 
-import assert from 'node:assert/strict';
+import assert from "node:assert/strict";
 
-import { PrecisionError, Temporal, precisionOf, toISO, toTemporal } from '@cosyte/dates';
-import type { DateParts } from '@cosyte/dates';
+import { PrecisionError, Temporal, precisionOf, toISO, toTemporal } from "@cosyte/dates";
+import type { DateParts } from "@cosyte/dates";
 
 const rows: ReadonlyArray<{ value: DateParts; iso: string; precision: string }> = [
-  { value: { year: 1988 }, iso: '1988', precision: 'year' },
-  { value: { year: 1988, month: 5 }, iso: '1988-05', precision: 'month' },
-  { value: { year: 1988, month: 5, day: 7 }, iso: '1988-05-07', precision: 'day' },
+  { value: { year: 1988 }, iso: "1988", precision: "year" },
+  { value: { year: 1988, month: 5 }, iso: "1988-05", precision: "month" },
+  { value: { year: 1988, month: 5, day: 7 }, iso: "1988-05-07", precision: "day" },
   {
     value: { year: 1988, month: 5, day: 7, hour: 13, minute: 45 },
-    iso: '1988-05-07T13:45',
-    precision: 'minute',
+    iso: "1988-05-07T13:45",
+    precision: "minute",
   },
   {
     value: {
@@ -35,8 +35,8 @@ const rows: ReadonlyArray<{ value: DateParts; iso: string; precision: string }> 
       fraction: 0.25,
       offsetMinutes: 330,
     },
-    iso: '1988-05-07T13:45:06.25+05:30',
-    precision: 'fraction',
+    iso: "1988-05-07T13:45:06.25+05:30",
+    precision: "fraction",
   },
 ];
 
@@ -60,7 +60,7 @@ const zoned = toTemporal({
   minute: 45,
   offsetMinutes: 330,
 });
-console.log([month, day, local, zoned].map((value) => value.constructor.name).join(' '));
+console.log([month, day, local, zoned].map((value) => value.constructor.name).join(" "));
 assert.ok(month instanceof Temporal.PlainYearMonth);
 assert.ok(day instanceof Temporal.PlainDate);
 assert.ok(local instanceof Temporal.PlainDateTime);
@@ -69,11 +69,11 @@ assert.ok(zoned instanceof Temporal.ZonedDateTime);
 // Temporal has no year-only type, so a year is refused rather than given an invented month.
 try {
   toTemporal({ year: 1988 });
-  assert.fail('toTemporal invented a month for a year-only value');
+  assert.fail("toTemporal invented a month for a year-only value");
 } catch (error) {
   assert.ok(error instanceof PrecisionError);
-  console.log('year-only toTemporal refused:', error.name, `(precision ${error.precision})`);
-  assert.equal(error.precision, 'year');
+  console.log("year-only toTemporal refused:", error.name, `(precision ${error.precision})`);
+  assert.equal(error.precision, "year");
 }
 
-console.log('render-at-precision: ok');
+console.log("render-at-precision: ok");

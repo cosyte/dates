@@ -12,7 +12,7 @@
  * fallback to the host time zone and none to UTC.
  */
 
-export { PRECISION_LADDER } from './types.js';
+export { PRECISION_LADDER } from "./types.js";
 export type {
   DateParts,
   IssueCode,
@@ -23,23 +23,23 @@ export type {
   ValidationIssue,
   ValidationResult,
   ZoneOptions,
-} from './types.js';
+} from "./types.js";
 
 export {
   AmbiguousLocalTimeError,
   DatePartsError,
   MissingZoneError,
   PrecisionError,
-} from './errors.js';
+} from "./errors.js";
 
-export { assertValidParts, isValidParts, precisionOf, validateParts } from './validate.js';
+export { assertValidParts, isValidParts, precisionOf, validateParts } from "./validate.js";
 
-export { toISO, toInstant, toTemporal, toZonedDateTime } from './convert.js';
-export type { TemporalValue } from './convert.js';
+export { toISO, toInstant, toTemporal, toZonedDateTime } from "./convert.js";
+export type { TemporalValue } from "./convert.js";
 
 /**
  * The Temporal implementation this package converts into, re-exported so a
  * consumer works with the same objects rather than installing a second copy.
  * Two Temporal implementations do not share `instanceof`.
  */
-export { Temporal } from 'temporal-polyfill';
+export { Temporal } from "temporal-polyfill";

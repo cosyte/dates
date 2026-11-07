@@ -1,22 +1,10 @@
 {
+  "extends": "@cosyte/tsconfig/base.json",
   "compilerOptions": {
-    "target": "ES2023",
-    "lib": ["ES2023"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "types": ["node"],
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitOverride": true,
-    "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "forceConsistentCasingInFileNames": true,
     "declaration": true,
-    "skipLibCheck": true,
     "noEmit": true,
     "paths": {
       "@cosyte/dates": ["./src/index.ts"]

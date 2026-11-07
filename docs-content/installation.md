@@ -27,13 +27,13 @@ objects rather than installing a second copy: two Temporal implementations do no
 `instanceof`.
 
 ```js
-import { Temporal } from '@cosyte/dates';
+import { Temporal } from "@cosyte/dates";
 ```
 
 ## Check the install
 
 ```js
-import { toISO, precisionOf } from '@cosyte/dates';
+import { toISO, precisionOf } from "@cosyte/dates";
 
 console.log(toISO({ year: 1988, month: 5 }), precisionOf({ year: 1988, month: 5 }));
 // 1988-05 month

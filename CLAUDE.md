@@ -20,6 +20,7 @@ pnpm run typecheck
 pnpm run lint
 pnpm run format:check
 pnpm run test
+pnpm run test:coverage
 pnpm run test:tz
 bash scripts/check-no-emdash.sh
 pnpm check:no-internal-refs
@@ -29,8 +30,10 @@ pnpm check:no-internal-refs
 `pnpm` is another version, `corepack pnpm` is not enough (attw's nested `pnpm pack` finds the
 global one): run `corepack enable pnpm --install-directory <dir>` and put `<dir>` first on `PATH`.
 
-CI runs `verify` on Node 22, the engine floor. The `no-emdash` check also scans the PR title,
-body and commit messages, which become the squash commit. CodeQL runs only in CI. A change under
+CI runs `verify` on Node 22, the engine floor, and on Node 24; the Node 22 leg is the required
+`verify` context. Lint, format, types, the build and the 90% coverage gate come from the shared
+`@cosyte/*` configs. The `no-emdash` check also scans the PR title, body and commit messages,
+which become the squash commit. CodeQL runs only in CI. A change under
 `src/` adds a changeset (`pnpm changeset`; `.changeset/README.md` says which bump).
 
 ## Hazard

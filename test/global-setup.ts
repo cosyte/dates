@@ -1,8 +1,8 @@
-import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, statSync } from 'node:fs';
-import path from 'node:path';
+import { execFileSync } from "node:child_process";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
 
-import { distEntry, packageRoot } from './support/paths.js';
+import { distEntry, packageRoot } from "./support/paths.js";
 
 function newestSourceTime(directory: string): number {
   let newest = 0;
@@ -24,7 +24,7 @@ function newestSourceTime(directory: string): number {
  * write the same output directory.
  */
 export default function setup(): void {
-  const sources = [path.join(packageRoot, 'src'), path.join(packageRoot, 'package.json')];
+  const sources = [path.join(packageRoot, "src"), path.join(packageRoot, "package.json")];
   const newest = Math.max(
     ...sources.map((entry) =>
       statSync(entry).isDirectory() ? newestSourceTime(entry) : statSync(entry).mtimeMs,
@@ -33,8 +33,8 @@ export default function setup(): void {
 
   if (existsSync(distEntry) && statSync(distEntry).mtimeMs >= newest) return;
 
-  execFileSync(path.join(packageRoot, 'node_modules', '.bin', 'tsup'), [], {
+  execFileSync(path.join(packageRoot, "node_modules", ".bin", "tsup"), [], {
     cwd: packageRoot,
-    stdio: 'inherit',
+    stdio: "inherit",
   });
 }
