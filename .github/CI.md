@@ -15,7 +15,7 @@ no gate: it blocks the very pull requests that would fix it.
 | workflow | trigger | what it is |
 |---|---|---|
 | `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the test suite, the suite again under a second host time zone, and the em-dash scan. |
-| `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Repo-local gate. Scans every tracked file, plus the pull request's own title, body and commit messages, for U+2014. |
+| `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Repo-local gate. Scans every tracked file, plus the pull request's own title, body and commit messages, for U+2014 and U+2013. |
 | `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of `cosyte/.github/.github/workflows/scorecard.yml@main`. Supply-chain analysis, SARIF into the Security tab. |
 | `.github/workflows/codeql.yml` | push to `main`, pull request to `main`, weekly cron | Thin caller of the org CodeQL reusable at a published reference. |
 | `.github/workflows/no-internal-refs.yml` | push to `main`, pull request to `main` | Thin caller of the org public-surface gate (installing variant) at a published reference. Runs `pnpm check:no-internal-refs` over the README, `docs-content/`, the npm description and keywords, and the `src/` doc comments. |
