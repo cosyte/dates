@@ -1,0 +1,13 @@
+# Install-time hardening. `packageManager` at pnpm 10.34.5 is what puts both keys in force: pnpm
+# reads minimumReleaseAge from 10.16.0 and trustPolicy from 10.21.0, and an older pnpm ignores both,
+# which is a settings file that decorates rather than defends.
+#
+# minimumReleaseAge: a package version younger than this many minutes (1440, 24 hours) is not
+# installable, so a compromised release has to survive a day of public scrutiny before it can reach
+# this tree. @cosyte is exempt by operator decision; every third-party package keeps the floor.
+# trustPolicy: `no-downgrade` refuses a resolution that moves a package backwards.
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  # reason: first-party @cosyte package, exempt from the floor by operator decision
+  - "@cosyte/*"
+trustPolicy: no-downgrade

@@ -21,13 +21,13 @@ machine running your code.
   `{ offsetMinutes }` (a fixed offset).
 
 ```js
-import { toInstant, toZonedDateTime } from '@cosyte/dates';
+import { toInstant, toZonedDateTime } from "@cosyte/dates";
 
 const local = { year: 2026, month: 3, day: 9, hour: 8, minute: 5 };
 
-toInstant(local, { timeZone: 'America/New_York' }).toString(); // '2026-03-09T12:05:00Z'
+toInstant(local, { timeZone: "America/New_York" }).toString(); // '2026-03-09T12:05:00Z'
 toInstant(local, { offsetMinutes: 0 }).toString(); // '2026-03-09T08:05:00Z'
-toZonedDateTime(local, { timeZone: 'America/New_York' }).toString();
+toZonedDateTime(local, { timeZone: "America/New_York" }).toString();
 // '2026-03-09T08:05:00-04:00[America/New_York]'
 
 const stated = { ...local, offsetMinutes: -300 };
@@ -50,7 +50,7 @@ clinical timeline by an hour. The error message names both candidate offsets whe
 pass the one you mean as `{ offsetMinutes }`.
 
 ```js
-toInstant({ year: 2026, month: 11, day: 1, hour: 1, minute: 30 }, { timeZone: 'America/New_York' });
+toInstant({ year: 2026, month: 11, day: 1, hour: 1, minute: 30 }, { timeZone: "America/New_York" });
 // AmbiguousLocalTimeError: 2026-11-01T01:30:00 happens twice in America/New_York ...
 
 toInstant(

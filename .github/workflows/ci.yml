@@ -2,30 +2,30 @@ name: CI
 
 # The gate for this repository, from the commit that gave it a package.
 #
-# ONE JOB, DELIBERATELY. Every rung runs inside `verify`, so the workflow reports
-# a single conclusive status rather than a set that has to be combined before it
-# can be read. A matrix would report several, and the thing reading this is a
-# sweep that asks "is `dates` green".
+# ONE JOB, RUN ON EACH SUPPORTED NODE LINE. Every rung runs inside `verify`, once on Node 22 (the
+# floor `engines` declares) and once on Node 24, the two lines the other @cosyte/* libraries test.
 #
-# REPO-LOCAL, NOT THE ORG REUSABLE, and that is a choice with a reason rather
-# than an oversight. `.github/CI.md` records `cosyte/.github/.github/workflows/
-# ci.yml@main` as the intended pipeline once this repo had a manifest, and it now
-# has one. Two things still argue for the local gate today:
+# THE NODE 22 LEG KEEPS THE CONTEXT NAME `verify`, AND THAT IS LOAD-BEARING. The branch ruleset
+# requires a check named exactly `verify`, and a matrix job is otherwise reported as `verify (22)`,
+# which would leave every pull request waiting for a context nothing emits. So the job name is an
+# expression: the Node 22 leg is `verify`, the Node 24 leg `verify (node 24)`. Only `verify` is
+# required today; requiring the Node 24 leg is a ruleset change, made once it has run on `main`.
+#
+# REPO-LOCAL, NOT THE ORG REUSABLE, for two reasons that still hold:
 #
 #   1. The reusable runs a FIXED ladder and no arbitrary repo script, so it
-#      cannot run `scripts/check-no-emdash.sh`. The em-dash gate has to be in
+#      cannot run `scripts/check-no-emdash.sh`. The dash gate has to be in
 #      whichever workflow is the gate, and here it is this one.
 #   2. Its ladder includes a dual ESM/CJS smoke import. This package is ESM only
 #      by decision, ships no CommonJS build, and would be red on arrival for a
 #      reason no change here should fix.
 #
-# Adopting the reusable is a later, separate change with its own preconditions.
-# It is not blocked by anything in this file: delete the steps, add a `uses:`.
+# Adopting the shared gates is later, separate work (the shared CI brings Node 26 with it).
 #
-# The em-dash gate ALSO has its own workflow (`no-emdash.yml`), and the overlap
+# The dash gate ALSO has its own workflow (`no-emdash.yml`), and the overlap
 # is on purpose. That one runs on the `edited` activity type so it re-checks a
 # pull request's title and body, which is the squash-merge commit message; this
-# one scans the tracked files as part of the single status a sweep reads. Neither
+# one scans the tracked files as part of the status a sweep reads. Neither
 # subsumes the other.
 
 on:
@@ -47,7 +47,14 @@ permissions:
 
 jobs:
   verify:
+    # The required context: see the note above before changing this line or the matrix.
+    name: ${{ matrix.node == 22 && 'verify' || format('verify (node {0})', matrix.node) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -56,11 +63,11 @@ jobs:
       # would be a second source of truth for one fact.
       - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
 
-      # The engine floor the package declares, so the gate proves the floor
-      # rather than whatever the runner happens to ship.
+      # Node 22 is the engine floor the package declares, so the gate proves the floor rather than
+      # whatever the runner happens to ship; Node 24 is the current long-term line.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
           cache: pnpm
 
       - name: Install
@@ -92,6 +99,10 @@ jobs:
       - name: Test
         run: pnpm run test
 
+      # The shared 90% coverage gate from @cosyte/vitest-config, over `src/`.
+      - name: Test coverage
+        run: pnpm run test:coverage
+
       # The package promises the host time zone changes nothing. A suite that
       # only ever runs under the runner's zone cannot notice a regression that
       # reintroduces a host-zone dependency, so it runs again from the other side
@@ -99,5 +110,5 @@ jobs:
       - name: Test under two host time zones
         run: pnpm run test:tz
 
-      - name: Em dash gate
+      - name: Em and en dash gate
         run: bash scripts/check-no-emdash.sh

@@ -22,7 +22,7 @@ Every refusal in `@cosyte/dates` is named. This page lists them and what to do a
 The four named error classes are exported, so `instanceof` works:
 
 ```js
-import { toInstant, MissingZoneError } from '@cosyte/dates';
+import { toInstant, MissingZoneError } from "@cosyte/dates";
 
 try {
   toInstant({ year: 1988, month: 5, day: 7, hour: 13, minute: 45 });

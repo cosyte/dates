@@ -1,35 +1,24 @@
-import js from '@eslint/js';
-import tseslint from 'typescript-eslint';
+import cosyte from "@cosyte/eslint-config";
 
-export default tseslint.config(
+// The shared Cosyte lint bar (@cosyte/eslint-config). Two additions, both local to this repo:
+//
+// - `.cosyte-release-tooling/` is a checkout of cosyte/.github that the shared release workflow
+//   makes inside this working tree before it runs `pnpm lint`. It is not this repository's code,
+//   and linting it once failed a release run on main.
+// - The programs under `examples/` are linted with the same type-checked rules as `src/`, but they
+//   are programs that print their results rather than library code, so `console` and the JSDoc
+//   gate are off for them.
+export default [
+  ...cosyte(import.meta.dirname, {
+    ignores: [".tmp/**", "dist-artifacts/**", ".cosyte-release-tooling/**"],
+    files: ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts", "examples/**/*.ts", "*.config.ts"],
+  }),
   {
-    // `.cosyte-release-tooling/` is a checkout of cosyte/.github that the shared release workflow
-    // makes inside this working tree before it runs `pnpm lint`. It is not this repository's code.
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      'coverage/**',
-      '.tmp/**',
-      'dist-artifacts/**',
-      '.cosyte-release-tooling/**',
-    ],
-  },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-  {
-    files: ['src/**/*.ts'],
+    files: ["examples/**/*.ts"],
     rules: {
-      // Load-bearing, not style. This package handles PHI-bearing values and
-      // promises to write nothing to stdout or stderr, so a stray console call
-      // is a data-leak defect. test/package-contract.test.ts proves the runtime
-      // behaviour; this rule stops the regression at the point it is typed.
-      'no-console': 'error',
+      "no-console": "off",
+      "jsdoc/require-jsdoc": "off",
+      "jsdoc/require-example": "off",
     },
   },
-  {
-    files: ['test/**/*.ts', '*.ts', '*.js'],
-    rules: {
-      'no-console': 'off',
-    },
-  },
-);
+];

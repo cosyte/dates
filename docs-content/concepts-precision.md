@@ -31,7 +31,7 @@ Two rules make it a contract:
    `{ year: 1988, month: 5 }` has precision `month`.
 
 ```js
-import { precisionOf, PRECISION_LADDER } from '@cosyte/dates';
+import { precisionOf, PRECISION_LADDER } from "@cosyte/dates";
 
 precisionOf({ year: 1988 }); // 'year'
 precisionOf({ year: 1988, month: 5, day: 7, hour: 13 }); // 'hour'
@@ -43,7 +43,7 @@ PRECISION_LADDER; // ['year', 'month', 'day', 'hour', 'minute', 'second', 'fract
 `validateParts()` never throws and reports every fault, not only the first:
 
 ```js
-import { validateParts } from '@cosyte/dates';
+import { validateParts } from "@cosyte/dates";
 
 const result = validateParts({ year: 1988, month: 13, day: 40 });
 result.valid; // false
@@ -65,7 +65,7 @@ components or throws a `DatePartsError` carrying the same `issues`.
 `toISO()` renders ISO 8601 at the precision the value has, and nothing finer:
 
 ```js
-import { toISO } from '@cosyte/dates';
+import { toISO } from "@cosyte/dates";
 
 toISO({ year: 1988 }); // '1988'
 toISO({ year: 2026, month: 3 }); // '2026-03'

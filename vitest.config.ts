@@ -1,10 +1,12 @@
-import { defineConfig } from 'vitest/config';
+import { cosyteVitest } from "@cosyte/vitest-config";
 
-export default defineConfig({
+// The shared Cosyte test setup (@cosyte/vitest-config): v8 coverage over `src/` with the 90% gate
+// that `pnpm test:coverage` enforces.
+export default cosyteVitest({
   test: {
-    environment: 'node',
-    include: ['test/**/*.test.ts'],
-    globalSetup: ['test/global-setup.ts'],
+    environment: "node",
+    include: ["test/**/*.test.ts"],
+    globalSetup: ["test/global-setup.ts"],
     // Child processes are spawned by the TZ matrix, the no-output contract and
     // the README example, and a cold build can be slow on a shared runner.
     testTimeout: 120_000,

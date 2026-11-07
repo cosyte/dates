@@ -1,4 +1,4 @@
-import type { ValidationIssue } from './types.js';
+import type { ValidationIssue } from "./types.js";
 
 /**
  * Reading a `fraction` as whole nanoseconds, EXACTLY.
@@ -36,15 +36,15 @@ function fractionDigits(fraction: number): string | undefined {
   const text = String(fraction);
 
   const plain = PLAIN_DECIMAL.exec(text);
-  if (plain !== null) return plain[1] ?? '';
+  if (plain !== null) return plain[1] ?? "";
 
   const exponential = EXPONENTIAL_DECIMAL.exec(text);
   if (exponential === null) return undefined;
 
-  const lead = exponential[1] ?? '';
-  const rest = exponential[2] ?? '';
+  const lead = exponential[1] ?? "";
+  const rest = exponential[2] ?? "";
   const exponent = Number(exponential[3]);
-  return '0'.repeat(exponent - 1) + lead + rest;
+  return "0".repeat(exponent - 1) + lead + rest;
 }
 
 /**
@@ -54,11 +54,13 @@ function fractionDigits(fraction: number): string | undefined {
  * `fraction` must already be known finite and in `[0, 1)`; {@link readFraction}
  * is the entry point that establishes both. The result is therefore always in
  * `[0, 999999999]`, never a whole second.
+ *
+ * @internal Not exported from the package entry point.
  */
 export function nanosecondsOf(fraction: number): number | undefined {
   const digits = fractionDigits(fraction);
   if (digits === undefined || digits.length > NANOSECOND_DIGITS) return undefined;
-  return digits === '' ? 0 : Number(digits.padEnd(NANOSECOND_DIGITS, '0'));
+  return digits === "" ? 0 : Number(digits.padEnd(NANOSECOND_DIGITS, "0"));
 }
 
 /** A fraction read as whole nanoseconds, or the diagnostic that refuses it. */
@@ -72,14 +74,16 @@ export type FractionReading =
  * Nothing is rounded. A value carrying detail below one nanosecond is REFUSED,
  * because rounding it away would silently change what the sender said, and this
  * package exists to not do that.
+ *
+ * @internal Not exported from the package entry point.
  */
 export function readFraction(fraction: number): FractionReading {
   if (!Number.isFinite(fraction) || fraction < 0 || fraction >= 1) {
     return {
       ok: false,
       issue: {
-        component: 'fraction',
-        code: 'out-of-range',
+        component: "fraction",
+        code: "out-of-range",
         message: `fraction is a share of one second and must satisfy 0 <= fraction < 1; received the number ${String(fraction)}`,
       },
     };
@@ -90,8 +94,8 @@ export function readFraction(fraction: number): FractionReading {
     return {
       ok: false,
       issue: {
-        component: 'fraction',
-        code: 'finer-than-nanosecond',
+        component: "fraction",
+        code: "finer-than-nanosecond",
         message: `fraction carries detail finer than one nanosecond, which this package will not round away; received the number ${String(fraction)}. One nanosecond is nine decimal places of a second, and it is the finest value Temporal can hold`,
       },
     };

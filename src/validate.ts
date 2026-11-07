@@ -1,6 +1,6 @@
-import { DatePartsError } from './errors.js';
-import { readFraction } from './fraction.js';
-import { PRECISION_LADDER } from './types.js';
+import { DatePartsError } from "./errors.js";
+import { readFraction } from "./fraction.js";
+import { PRECISION_LADDER } from "./types.js";
 import type {
   DateParts,
   InvalidPartsResult,
@@ -8,11 +8,11 @@ import type {
   Precision,
   ValidationIssue,
   ValidationResult,
-} from './types.js';
+} from "./types.js";
 
-const ALL_PARTS: readonly PartName[] = [...PRECISION_LADDER, 'offsetMinutes'];
+const ALL_PARTS: readonly PartName[] = [...PRECISION_LADDER, "offsetMinutes"];
 
-type IntegerPart = Exclude<PartName, 'fraction'>;
+type IntegerPart = Exclude<PartName, "fraction">;
 
 const INTEGER_RANGES: Readonly<Record<IntegerPart, readonly [number, number]>> = {
   year: [1000, 9999],
@@ -25,23 +25,23 @@ const INTEGER_RANGES: Readonly<Record<IntegerPart, readonly [number, number]>> =
 };
 
 const RANGE_NOTES: Readonly<Partial<Record<IntegerPart, string>>> = {
-  month: ' (spec-native, January is 1, not 0)',
-  offsetMinutes: ' (signed minutes from UTC)',
+  month: " (spec-native, January is 1, not 0)",
+  offsetMinutes: " (signed minutes from UTC)",
 };
 
 const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ] as const;
 
 const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
@@ -62,20 +62,20 @@ function monthName(month: number): string {
 
 /** A short, non-throwing description of a value, for diagnostics. */
 function describe(value: unknown): string {
-  if (value === null) return 'null';
-  if (value === undefined) return 'undefined';
-  if (typeof value === 'number') {
-    if (Number.isNaN(value)) return 'NaN';
-    if (!Number.isFinite(value)) return value > 0 ? 'Infinity' : '-Infinity';
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+  if (typeof value === "number") {
+    if (Number.isNaN(value)) return "NaN";
+    if (!Number.isFinite(value)) return value > 0 ? "Infinity" : "-Infinity";
     return `the number ${String(value)}`;
   }
-  if (typeof value === 'string') return 'a string';
-  if (typeof value === 'boolean') return `the boolean ${String(value)}`;
-  if (typeof value === 'bigint') return 'a bigint';
-  if (typeof value === 'symbol') return 'a symbol';
-  if (typeof value === 'function') return 'a function';
-  if (Array.isArray(value)) return 'an array';
-  return 'an object';
+  if (typeof value === "string") return "a string";
+  if (typeof value === "boolean") return `the boolean ${String(value)}`;
+  if (typeof value === "bigint") return "a bigint";
+  if (typeof value === "symbol") return "a symbol";
+  if (typeof value === "function") return "a function";
+  if (Array.isArray(value)) return "an array";
+  return "an object";
 }
 
 function invalid(issues: readonly ValidationIssue[]): InvalidPartsResult {
@@ -103,7 +103,7 @@ function readComponent(
       ok: false,
       issue: {
         component: name,
-        code: 'unreadable',
+        code: "unreadable",
         message: `${name} could not be read: the property threw when accessed, so this package cannot see what value it holds and will not guess one`,
       },
     };
@@ -125,13 +125,22 @@ function readComponent(
  * Components are looked up by name, so an object carrying them on its prototype
  * (a class instance with accessors, which is a shape a parser may well hand
  * over) is read the same way a plain object literal is.
+ *
+ * @example
+ * ```ts
+ * validateParts({ year: 1988, month: 5, day: 7 });
+ * // { valid: true, parts: { year: 1988, month: 5, day: 7 }, precision: 'day' }
+ *
+ * const result = validateParts({ year: 1988, month: 13, day: 40 });
+ * result.valid; // false
+ * ```
  */
 export function validateParts(value: unknown): ValidationResult {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== "object" || value === null) {
     return invalid([
       {
-        component: 'value',
-        code: 'not-a-parts-object',
+        component: "value",
+        code: "not-a-parts-object",
         message: `a date-parts value must be an object carrying the components the contract names; received ${describe(value)}`,
       },
     ]);
@@ -140,10 +149,10 @@ export function validateParts(value: unknown): ValidationResult {
   if (value instanceof Date) {
     return invalid([
       {
-        component: 'value',
-        code: 'not-a-parts-object',
+        component: "value",
+        code: "not-a-parts-object",
         message:
-          'a JavaScript Date is an absolute instant, not a date-parts value: it cannot express a year-only or month-only date, and it carries no offset of its own. Pass the parts the parser returned',
+          "a JavaScript Date is an absolute instant, not a date-parts value: it cannot express a year-only or month-only date, and it carries no offset of its own. Pass the parts the parser returned",
       },
     ]);
   }
@@ -151,10 +160,10 @@ export function validateParts(value: unknown): ValidationResult {
   if (Array.isArray(value)) {
     return invalid([
       {
-        component: 'value',
-        code: 'not-a-parts-object',
+        component: "value",
+        code: "not-a-parts-object",
         message:
-          'a date-parts value must be an object with named components; received an array, whose positions this package will not guess at',
+          "a date-parts value must be an object with named components; received an array, whose positions this package will not guess at",
       },
     ]);
   }
@@ -177,10 +186,10 @@ export function validateParts(value: unknown): ValidationResult {
     if (raw === undefined) continue;
     present.add(name);
 
-    if (typeof raw !== 'number') {
+    if (typeof raw !== "number") {
       issues.push({
         component: name,
-        code: 'not-a-number',
+        code: "not-a-number",
         message: `${name} must be a number; received ${describe(raw)}`,
       });
       continue;
@@ -189,13 +198,13 @@ export function validateParts(value: unknown): ValidationResult {
     if (!Number.isFinite(raw)) {
       issues.push({
         component: name,
-        code: 'not-finite',
+        code: "not-finite",
         message: `${name} must be a finite number; received ${describe(raw)}`,
       });
       continue;
     }
 
-    if (name === 'fraction') {
+    if (name === "fraction") {
       const reading = readFraction(raw);
       if (reading.ok) values.fraction = raw;
       else issues.push(reading.issue);
@@ -205,7 +214,7 @@ export function validateParts(value: unknown): ValidationResult {
     if (!Number.isInteger(raw)) {
       issues.push({
         component: name,
-        code: 'not-an-integer',
+        code: "not-an-integer",
         message: `${name} must be a whole number; received the number ${String(raw)}`,
       });
       continue;
@@ -214,16 +223,16 @@ export function validateParts(value: unknown): ValidationResult {
     const [low, high] = INTEGER_RANGES[name];
     if (raw < low || raw > high) {
       issues.push(
-        name === 'year'
+        name === "year"
           ? {
-              component: 'year',
-              code: 'year-not-four-digits',
+              component: "year",
+              code: "year-not-four-digits",
               message: `year must be a four-digit year in ${String(low)}-${String(high)}; received the number ${String(raw)}. This package applies no century window and never interprets a two-digit year`,
             }
           : {
               component: name,
-              code: 'out-of-range',
-              message: `${name} must be an integer in ${String(low)}-${String(high)}${RANGE_NOTES[name] ?? ''}; received the number ${String(raw)}`,
+              code: "out-of-range",
+              message: `${name} must be an integer in ${String(low)}-${String(high)}${RANGE_NOTES[name] ?? ""}; received the number ${String(raw)}`,
             },
       );
       continue;
@@ -260,10 +269,10 @@ function checkContiguity(present: ReadonlySet<PartName>, issues: ValidationIssue
 
   if (deepest === undefined) {
     issues.push({
-      component: 'year',
-      code: 'missing-component',
+      component: "year",
+      code: "missing-component",
       message:
-        'year is missing: a date-parts value must carry at least a year, and this package never infers one',
+        "year is missing: a date-parts value must carry at least a year, and this package never infers one",
     });
     return;
   }
@@ -274,19 +283,19 @@ function checkContiguity(present: ReadonlySet<PartName>, issues: ValidationIssue
     if (name === undefined || present.has(name)) continue;
     issues.push({
       component: name,
-      code: 'missing-component',
+      code: "missing-component",
       message: `${name} is missing while ${deepest} is present: components run from year downward with no gaps, and this package never infers the one you left out`,
     });
   }
 }
 
 function checkOffsetHasTimeOfDay(present: ReadonlySet<PartName>, issues: ValidationIssue[]): void {
-  if (!present.has('offsetMinutes') || present.has('hour')) return;
+  if (!present.has("offsetMinutes") || present.has("hour")) return;
   issues.push({
-    component: 'offsetMinutes',
-    code: 'offset-without-time-of-day',
+    component: "offsetMinutes",
+    code: "offset-without-time-of-day",
     message:
-      'offsetMinutes is present but the value states no time of day: an offset qualifies a clock time, it cannot be rendered without one, and dropping it silently is not an option this package takes',
+      "offsetMinutes is present but the value states no time of day: an offset qualifies a clock time, it cannot be rendered without one, and dropping it silently is not an option this package takes",
   });
 }
 
@@ -302,16 +311,24 @@ function checkCalendarDate(
 
   const leapNote =
     month === 2
-      ? `, because ${String(year)} is ${isLeapYear(year) ? 'a' : 'not a'} leap year in the proleptic Gregorian calendar`
-      : '';
+      ? `, because ${String(year)} is ${isLeapYear(year) ? "a" : "not a"} leap year in the proleptic Gregorian calendar`
+      : "";
   issues.push({
-    component: 'day',
-    code: 'no-such-calendar-date',
+    component: "day",
+    code: "no-such-calendar-date",
     message: `day ${String(day)} does not exist: ${monthName(month)} ${String(year)} has ${String(limit)} days${leapNote}`,
   });
 }
 
-/** A type guard over {@link validateParts}, for callers that want a boolean. */
+/**
+ * A type guard over {@link validateParts}, for callers that want a boolean.
+ *
+ * @example
+ * ```ts
+ * isValidParts({ year: 2024, month: 2, day: 29 }); // true
+ * isValidParts({ year: 2025, month: 2, day: 29 }); // false
+ * ```
+ */
 export function isValidParts(value: unknown): value is DateParts {
   return validateParts(value).valid;
 }
@@ -319,6 +336,12 @@ export function isValidParts(value: unknown): value is DateParts {
 /**
  * Validate and return the recognised components, or throw {@link DatePartsError}
  * carrying the same diagnostics {@link validateParts} would have reported.
+ *
+ * @example
+ * ```ts
+ * assertValidParts({ year: 1988, month: 5 }); // { year: 1988, month: 5 }
+ * assertValidParts({ year: 2025, month: 2, day: 29 }); // throws DatePartsError
+ * ```
  */
 export function assertValidParts(value: unknown): DateParts {
   const result = validateParts(value);
@@ -331,6 +354,12 @@ export function assertValidParts(value: unknown): DateParts {
  *
  * Throws {@link DatePartsError} for a value that does not satisfy the contract,
  * because an invalid value has no precision to report.
+ *
+ * @example
+ * ```ts
+ * precisionOf({ year: 1988 }); // 'year'
+ * precisionOf({ year: 1988, month: 5, day: 7, hour: 13 }); // 'hour'
+ * ```
  */
 export function precisionOf(value: unknown): Precision {
   const result = validateParts(value);

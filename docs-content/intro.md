@@ -19,7 +19,7 @@ companion that validates, renders and converts those parts, with the same two pr
   until you say which zone applies. There is no fallback to the host time zone and none to UTC.
 
 ```js
-import { toISO, toInstant } from '@cosyte/dates';
+import { toISO, toInstant } from "@cosyte/dates";
 
 toISO({ year: 1988 }); // '1988'
 toISO({ year: 1988, month: 5, day: 7 }); // '1988-05-07'

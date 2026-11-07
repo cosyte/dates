@@ -22,9 +22,9 @@
  *     is 1. There is no local copy of the gate behind the import.
  */
 
-import process from 'node:process';
+import process from "node:process";
 
-const SPECIFIER = '@cosyte/script-utils/attw';
+const SPECIFIER = "@cosyte/script-utils/attw";
 
 let runAttwGate;
 try {

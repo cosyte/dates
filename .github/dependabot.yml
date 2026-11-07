@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # npm: one weekly pull request for the dev dependencies; a runtime dependency gets its own
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    # a release must be a day old before it is proposed, the same floor pnpm-workspace.yaml sets
+    cooldown:
+      default-days: 1
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: development
+  # keep GitHub Actions references current
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 1
