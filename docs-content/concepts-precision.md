@@ -2,6 +2,7 @@
 id: concepts-precision
 title: Precision
 sidebar_position: 1
+description: "How a value's precision is defined and validated, and how it is kept when the value is rendered or converted."
 ---
 
 # Precision
@@ -50,14 +51,14 @@ result.valid; // false
 result.issues.map((issue) => issue.code); // ['out-of-range', 'out-of-range']
 ```
 
-On success it returns the recognised components and the precision:
+On success it returns the recognized components and the precision:
 
 ```js
 validateParts({ year: 1988, month: 5, day: 7 });
 // { valid: true, parts: { year: 1988, month: 5, day: 7 }, precision: 'day' }
 ```
 
-`isValidParts()` is the same check as a type guard, and `assertValidParts()` returns the recognised
+`isValidParts()` is the same check as a type guard, and `assertValidParts()` returns the recognized
 components or throws a `DatePartsError` carrying the same `issues`.
 
 ## Rendering and converting at the value's own precision

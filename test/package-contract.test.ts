@@ -47,7 +47,8 @@ describe("package identity", () => {
   it("carries a full MIT licence text naming the copyright owner", () => {
     const licence = readFileSync(path.join(packageRoot, "LICENSE"), "utf8");
     expect(licence).toContain("MIT License");
-    expect(licence).toMatch(/Copyright \(c\) \d{4} Cosyte/);
+    // The legal name, as every copyright line carries it.
+    expect(licence).toMatch(/^Copyright \(c\) \d{4} Cosyte LLC$/m);
     expect(licence).toContain("Permission is hereby granted, free of charge");
     expect(licence).toContain('THE SOFTWARE IS PROVIDED "AS IS"');
     expect(licence).toContain("WITHOUT WARRANTY OF ANY KIND");
@@ -230,12 +231,14 @@ describe("the README against the house template", () => {
     expect(section(readme, "License")).toContain("Cosyte");
   });
 
-  it("makes the 0.1.0 claim in the template words and names what is not covered", () => {
+  it("names the release line in the template words and names what is not covered", () => {
     const status = section(readme, "Status");
-    expect(status).toContain("0.1.0");
+    // The release line, never a hand-typed exact version, which goes stale at the next release.
+    expect(status).toMatch(/the 0\.1 line/i);
+    expect(status).not.toMatch(/\b0\.1\.\d+\b/);
     // The template's own words, allowing only the sentence-initial capital.
     expect(status).toMatch(/the public API is settled and safe to depend on/i);
-    expect(status).toContain("Not covered at 0.1.0");
+    expect(status).toContain("Not covered on the 0.1 line");
     expect(status).toMatch(/two-digit years/i);
     expect(status).not.toMatch(/^\s*\*\*Pre-launch\.\*\*\s*$/m);
   });
@@ -250,7 +253,8 @@ describe("the README against the house template", () => {
   it("states the install surface: manager, engine floor and module format", () => {
     const install = section(readme, "Install");
     expect(install).toContain("pnpm add @cosyte/dates");
-    expect(install).toContain(">=22.0.0");
+    // The support line: the floor engines declares, and the Node lines CI runs.
+    expect(install).toContain("Node.js 22 or later, tested on 22 and 24");
     expect(install).toContain("ESM");
   });
 });

@@ -2,6 +2,7 @@
 id: intro
 title: Overview
 sidebar_position: 1
+description: "What @cosyte/dates does: it validates and converts the date parts the @cosyte/* parsers return, without adding precision or guessing a zone."
 ---
 
 # @cosyte/dates
@@ -11,9 +12,9 @@ Work with the dates the `@cosyte/*` parsers give you, without losing what the wi
 The `@cosyte/*` parsers hand back dates as parts rather than as JavaScript `Date` objects. An HL7 v2
 `|1970|` is a year, `|19880507|` is a calendar day, and a timestamp with no offset is the sender's
 local time. The parsers keep exactly that and invent nothing else. `@cosyte/dates` is the opt-in
-companion that validates, renders and converts those parts, with the same two promises:
+companion that validates, renders, and converts those parts, with the same two promises:
 
-- **Precision is preserved.** A year stays a year. Nothing adds a month, a day or a midnight that the
+- **Precision is preserved.** A year stays a year. Nothing adds a month, a day, or a midnight that the
   value did not state.
 - **No zone is ever guessed.** A value whose offset is unknown cannot become an absolute instant
   until you say which zone applies. There is no fallback to the host time zone and none to UTC.
@@ -41,14 +42,14 @@ toInstant({ year: 1988, month: 5, day: 7, hour: 13, minute: 45, offsetMinutes: 3
 
 - It parses no vendor date text: it consumes parts a parser already produced.
 - It never interprets a two-digit year.
-- It carries no arithmetic, comparison or formatting helpers: convert with `toTemporal()` and use
+- It carries no arithmetic, comparison, or formatting helpers: convert with `toTemporal()` and use
   Temporal for the rest.
 - It handles years 1000 to 9999 in the proleptic Gregorian calendar, and no leap seconds.
 
 ## Status
 
-`0.1.0` is the first published release. The exported functions, the shape of `DateParts`, the issue
-codes and the error classes are settled and safe to depend on. Below `1.0.0`, a breaking change to
+This package is on the 0.1 line. The exported functions, the shape of `DateParts`, the issue
+codes, and the error classes are settled and safe to depend on. Below `1.0.0`, a breaking change to
 any of them ships in a new minor version and is called out in the changelog.
 
 Next: [Installation](./installation), then the [Quickstart](./quickstart).
