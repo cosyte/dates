@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1
+
+### Patch Changes
+
+- 38e450f: Published through npm trusted publishing, with provenance.
+
+  The code, types and README are unchanged from 0.1.0.
+
 ## 0.1.0
 
 ### Minor Changes
