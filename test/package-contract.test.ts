@@ -47,7 +47,8 @@ describe("package identity", () => {
   it("carries a full MIT licence text naming the copyright owner", () => {
     const licence = readFileSync(path.join(packageRoot, "LICENSE"), "utf8");
     expect(licence).toContain("MIT License");
-    expect(licence).toMatch(/Copyright \(c\) \d{4} Cosyte/);
+    // The legal name, as every copyright line carries it.
+    expect(licence).toMatch(/^Copyright \(c\) \d{4} Cosyte LLC$/m);
     expect(licence).toContain("Permission is hereby granted, free of charge");
     expect(licence).toContain('THE SOFTWARE IS PROVIDED "AS IS"');
     expect(licence).toContain("WITHOUT WARRANTY OF ANY KIND");

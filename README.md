@@ -198,4 +198,4 @@ needs one that pins the exact output rather than a shape.
 
 ## License
 
-MIT, Cosyte. See [LICENSE](https://github.com/cosyte/dates/blob/main/LICENSE).
+MIT, copyright Cosyte LLC. See [LICENSE](https://github.com/cosyte/dates/blob/main/LICENSE).
