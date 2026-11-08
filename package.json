@@ -45,6 +45,12 @@
     "node": ">=22.0.0"
   },
   "packageManager": "pnpm@10.34.5",
+  "pnpm": {
+    "overrides": {
+      "esbuild@>=0.27.3 <0.28.1": "0.28.1",
+      "minimatch@>=10.0.0 <11.0.1": "11.0.1"
+    }
+  },
   "publishConfig": {
     "access": "public",
     "provenance": true
@@ -93,7 +99,7 @@
     "tsup": "8.5.1",
     "tsx": "4.21.0",
     "typescript": "5.9.3",
-    "vite": "8.2.2",
+    "vite": "8.2.4",
     "vitest": "4.1.12"
   },
   "prettier": "@cosyte/prettier-config"
