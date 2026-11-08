@@ -20,7 +20,7 @@ pnpm run build && pnpm run attw && pnpm run examples
 pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run phi-scan
 pnpm run test && pnpm run test:coverage && pnpm run test:tz
 pnpm check:no-emdash && pnpm check:no-internal-refs
-pnpm check:readme && pnpm check:claude-card && pnpm check:catalog
+pnpm check:readme && pnpm check:claude-card && pnpm check:catalog && pnpm check:process
 ```
 
 `pnpm` must be the version `packageManager` in `package.json` pins, as in CI. Where the global
@@ -29,9 +29,11 @@ global one): run `corepack enable pnpm --install-directory <dir>` and put `<dir>
 
 CI runs `verify` on Node 22, the engine floor, and on Node 24 and 26; the Node 22 leg is the
 `verify` context. Lint, format, types, the build and the 90% coverage gate come from the shared
-`@cosyte/*` configs. The `no-emdash-messages` check, never required, scans the PR title, body and
-commit messages, which become the squash commit. CodeQL runs only in CI. A change under `src/`
-adds a changeset (`pnpm changeset`; `.changeset/README.md` says which bump).
+`@cosyte/*` configs, run by `cosyte-process` (`@cosyte/process`), which pins the tool versions;
+the repo-specific lint and format globs are in `cosyte-process.config.json`. The
+`no-emdash-messages` check, never required, scans the PR title, body and commit messages, which
+become the squash commit. CodeQL runs only in CI. A change under `src/` adds a changeset
+(`pnpm changeset`; `.changeset/README.md` says which bump).
 
 ## Hazard
 
