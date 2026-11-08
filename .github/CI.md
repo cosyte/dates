@@ -14,8 +14,8 @@ no gate: it blocks the very pull requests that would fix it.
 
 | workflow | trigger | what it is |
 |---|---|---|
-| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22, 24 and 26: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the test suite, the 90% coverage gate (`pnpm run test:coverage`), the suite again under a second host time zone, and the em and en dash scan. |
-| `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Repo-local gate. Scans every tracked file, plus the pull request's own title, body and commit messages, for U+2014 and U+2013. |
+| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22, 24 and 26: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the PHI scan (`pnpm run phi-scan`), the test suite, the 90% coverage gate (`pnpm run test:coverage`), the suite again under a second host time zone, the em and en dash gate, and the README, CLAUDE.md card, agent-notes and catalog checks. The PHI scan, the dash gate and the four checks are the shared ones from `@cosyte/script-utils` (ST34). |
+| `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Repo-local job running the shared gate (`pnpm check:no-emdash`, `cosyte-no-emdash`). Scans every tracked file and file name, plus the pull request's own title, body and commit messages, for U+2014 and U+2013 in every encoded form. |
 | `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of the org Scorecard reusable at a published reference. Supply-chain analysis, SARIF into the Security tab. |
 | `.github/workflows/codeql.yml` | push to `main`, pull request to `main`, weekly cron | Thin caller of the org CodeQL reusable at a published reference. |
 | `.github/workflows/no-internal-refs.yml` | push to `main`, pull request to `main` | Thin caller of the org public-surface gate (installing variant) at a published reference. Runs `pnpm check:no-internal-refs` over the README, `docs-content/`, the npm description and keywords, and the `src/` doc comments. |
@@ -36,8 +36,8 @@ The em-dash scan appears in both `ci.yml` and `no-emdash.yml`, and neither
 subsumes the other. `no-emdash.yml` carries the `edited` activity type so it
 re-checks a pull request's title and body, which under squash merge ARE the
 commit message that lands; `ci.yml` scans the tracked files as one rung of the
-single status. The file scan is a checkout and one grep, so running it twice
-costs nothing worth optimising.
+single status. The file scan takes seconds once the dependencies are installed,
+so running it twice costs nothing worth optimizing.
 
 `scorecard.yml` never runs on `pull_request`, and that is a hard constraint
 rather than a style choice: `ossf/scorecard-action` validates the ref before it
@@ -84,8 +84,9 @@ writes `dist-artifacts/docs-content.tar.gz` (the pages under `docs-content/`) an
 `dist-artifacts/source.tar.gz` (`src/`, `package.json` and `tsconfig.json`) for docs.cosyte.com and
 attaches both to the GitHub release.
 
-`attw` runs with `--profile esm-only`, because this package ships no CommonJS build by decision; the
-CommonJS resolutions are not ones it promises.
+`attw` runs with attw's `esm-only` profile, which `scripts/attw.exclude` selects (`node10` and
+`node16-cjs`), because this package ships no CommonJS build by decision; the CommonJS resolutions
+are not ones it promises. The gate itself is `cosyte-attw` from `@cosyte/script-utils`.
 
 ## The org reusables this repo does NOT call yet
 
@@ -98,8 +99,8 @@ is now met. None of these is an oversight.
 Not adopted anyway, for two reasons that outlive the precondition.**
 
 1. The reusable runs a FIXED ladder and no arbitrary repo script, so it cannot
-   run `scripts/check-no-emdash.sh`. The em-dash gate has to live in whichever
-   workflow is the gate.
+   run this repository's dash gate, PHI scan or document checks. They have to
+   live in whichever workflow is the gate.
 2. Its ladder includes a dual ESM/CJS smoke import of the built entrypoint. This
    package is ESM only by decision and ships no CommonJS build, so that rung
    would be red for a reason no change here should fix.

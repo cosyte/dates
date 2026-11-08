@@ -29,10 +29,12 @@ pnpm run examples
 pnpm run typecheck
 pnpm run lint
 pnpm run format:check
+pnpm run phi-scan
 pnpm run test
 pnpm run test:coverage
 pnpm run test:tz
 pnpm check:no-emdash
+pnpm check:readme && pnpm check:claude-card && pnpm check:agent-notes && pnpm check:catalog
 pnpm check:no-internal-refs
 ```
 

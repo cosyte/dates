@@ -1,0 +1,5 @@
+# What attw leaves out of this package's analysis, read by the shared gate (@cosyte/script-utils,
+# `cosyte-attw`, ST34). `node10` with `node16-cjs` selects attw's esm-only profile: this package is
+# ESM only by decision and ships no CommonJS build, so neither CommonJS resolution is one it promises.
+node10
+node16-cjs

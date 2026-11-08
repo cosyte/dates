@@ -25,8 +25,8 @@ importers:
         specifier: ^0.1.2
         version: 0.1.2
       '@cosyte/script-utils':
-        specifier: ^0.1.2
-        version: 0.1.2
+        specifier: ^0.1.4
+        version: 0.1.4
       '@cosyte/tsconfig':
         specifier: ^0.1.2
         version: 0.1.2
@@ -174,9 +174,10 @@ packages:
   '@cosyte/prettier-config@0.1.2':
     resolution: {integrity: sha512-bpcOjNAU+IBscFxZk7CBODgd7VRwOirg8LlffJLAQUTobI1JunbvAZa98u1BNv+/m5ILMGVNFopGW9HPNA2H5Q==}
 
-  '@cosyte/script-utils@0.1.2':
-    resolution: {integrity: sha512-n2WxqKJNXlIlFu5JjFMmGG9R/cfABANGS6qr/2Zgo4MpjjntoIyYV9FZNQB0R22s9i57fkna8dXt0LxEGXHTmA==}
+  '@cosyte/script-utils@0.1.4':
+    resolution: {integrity: sha512-o+4G9E20+9w2r+c817lg6C5Mhtvmhpq1SZSpUXSvURPqcSGL5xX6z6dL4hA2+LQrtaPX1lg6Wk1saJDOFL0BPA==}
     engines: {node: '>=22.14'}
+    hasBin: true
 
   '@cosyte/tsconfig@0.1.2':
     resolution: {integrity: sha512-ZTWC9cgdccJwL+EWTEWCtJr/a87TTZWlegTZWHpN7LGW3rALE1glnffOFMVraj4XSUam+DuHVOdGmKF8BhJPlA==}
@@ -2187,7 +2188,7 @@ snapshots:
 
   '@cosyte/prettier-config@0.1.2': {}
 
-  '@cosyte/script-utils@0.1.2': {}
+  '@cosyte/script-utils@0.1.4': {}
 
   '@cosyte/tsconfig@0.1.2': {}
 

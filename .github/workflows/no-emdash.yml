@@ -16,8 +16,10 @@ name: Em-dash gate
 # The job id is the required check `no-emdash` in the `ci-required-checks` ruleset (see
 # `.github/CI.md`): rename it and every pull request waits on a context nothing emits.
 #
-# Run it locally with `pnpm check:no-emdash` (`bash scripts/check-no-emdash.sh`), and check PR text
-# with `bash scripts/check-no-emdash.sh --stdin pr < body.md`.
+# The gate is the shared one (ST34): `pnpm check:no-emdash` runs `cosyte-no-emdash` from
+# @cosyte/script-utils, which matches both dashes in every encoded form, in tracked files and in
+# their names, so this job installs from the committed lockfile before it scans. Run it locally with
+# `pnpm check:no-emdash`, and check PR text with `pnpm check:no-emdash --stdin pr < body.md`.
 
 on:
   push:
@@ -37,7 +39,7 @@ permissions:
 jobs:
   no-emdash:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -45,8 +47,20 @@ jobs:
           # and the default shallow clone does not contain the base commit.
           fetch-depth: 0
 
+      # No `version:` input: the action reads `packageManager` from package.json.
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      # The gate lives in node_modules (@cosyte/script-utils), so it needs the install first.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
       - name: Check tracked files
-        run: bash scripts/check-no-emdash.sh
+        run: pnpm check:no-emdash
 
       # The rule names commit messages explicitly, and a squash merge composes its message
       # from the PR title, the PR body, and the branch commits, so all three are checked.
@@ -72,5 +86,5 @@ jobs:
             printf '%s\n' "$PR_BODY"
             git log --format=%B "$BASE_SHA..$HEAD_SHA"
           } > "$RUNNER_TEMP/pr-messages.txt"
-          bash scripts/check-no-emdash.sh --stdin "the PR title, body, or commit messages" \
+          pnpm check:no-emdash --stdin "the PR title, body, or commit messages" \
             < "$RUNNER_TEMP/pr-messages.txt"

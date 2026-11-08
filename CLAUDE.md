@@ -16,9 +16,10 @@ A PR is green when four required checks pass: `verify` (`.github/workflows/ci.ym
 ```bash
 pnpm install --frozen-lockfile
 pnpm run build && pnpm run attw && pnpm run examples
-pnpm run typecheck && pnpm run lint && pnpm run format:check
+pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run phi-scan
 pnpm run test && pnpm run test:coverage && pnpm run test:tz
-bash scripts/check-no-emdash.sh && pnpm check:no-internal-refs
+pnpm check:no-emdash && pnpm check:no-internal-refs
+pnpm check:readme && pnpm check:claude-card && pnpm check:agent-notes && pnpm check:catalog
 ```
 
 `pnpm` must be the version `packageManager` in `package.json` pins, as in CI. Where the global
