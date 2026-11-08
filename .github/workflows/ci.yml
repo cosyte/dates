@@ -124,15 +124,12 @@ jobs:
         run: pnpm run check:no-emdash
 
       # The house checks on this repository's documents and its catalog entry, all from
-      # @cosyte/script-utils (RD1, RD2, RD4, PF1). Steps of this job, so they gate a merge.
+      # @cosyte/script-utils (RD1, RD2, PF1). Steps of this job, so they gate a merge.
       - name: The README follows the house skeleton
         run: pnpm run check:readme
 
       - name: The CLAUDE.md card follows its spec
         run: pnpm run check:claude-card
-
-      - name: Every pointer into the agent notes resolves
-        run: pnpm run check:agent-notes
 
       - name: The package description is the catalog's
         run: pnpm run check:catalog

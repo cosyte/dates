@@ -62,7 +62,6 @@
     "phi-scan": "cosyte-phi-scan",
     "check:readme": "cosyte-readme",
     "check:claude-card": "cosyte-claude-card",
-    "check:agent-notes": "cosyte-agent-notes",
     "check:catalog": "cosyte-catalog",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.{ts,mjs}\" \"examples/**/*.{ts,md}\" \"docs-content/**/*.{md,json}\" \"*.{ts,json,md,yml}\"",

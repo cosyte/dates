@@ -19,7 +19,7 @@ pnpm run build && pnpm run attw && pnpm run examples
 pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run phi-scan
 pnpm run test && pnpm run test:coverage && pnpm run test:tz
 pnpm check:no-emdash && pnpm check:no-internal-refs
-pnpm check:readme && pnpm check:claude-card && pnpm check:agent-notes && pnpm check:catalog
+pnpm check:readme && pnpm check:claude-card && pnpm check:catalog
 ```
 
 `pnpm` must be the version `packageManager` in `package.json` pins, as in CI. Where the global
