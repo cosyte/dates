@@ -82,19 +82,19 @@
     "@changesets/cli": "2.31.0",
     "@cosyte/eslint-config": "^0.1.2",
     "@cosyte/prettier-config": "^0.1.2",
-    "@cosyte/script-utils": "^0.1.4",
+    "@cosyte/script-utils": "^0.1.5",
     "@cosyte/tsconfig": "^0.1.2",
     "@cosyte/tsup-config": "^0.1.2",
     "@cosyte/vitest-config": "^0.1.2",
     "@types/node": "22.20.1",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
     "eslint": "10.9.1",
     "prettier": "3.9.6",
     "tsup": "8.5.1",
     "tsx": "4.21.0",
     "typescript": "5.9.3",
     "vite": "8.2.2",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   },
   "prettier": "@cosyte/prettier-config"
 }
