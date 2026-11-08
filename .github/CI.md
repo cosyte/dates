@@ -15,7 +15,7 @@ no gate: it blocks the very pull requests that would fix it.
 | workflow | trigger | what it is |
 |---|---|---|
 | `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22, 24 and 26: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the PHI scan (`pnpm run phi-scan`), the test suite, the 90% coverage gate (`pnpm run test:coverage`), the suite again under a second host time zone, the em and en dash gate, and the README, CLAUDE.md card and catalog checks. The PHI scan, the dash gate and the three checks are the shared ones from `@cosyte/script-utils` (ST34). A second job, `actionlint`, lints every workflow file with rhysd/actionlint's release binary, at the version and SHA-256 the shared CI pins (EN6). |
-| `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Repo-local job running the shared gate (`pnpm check:no-emdash`, `cosyte-no-emdash`). Scans every tracked file and file name, plus the pull request's own title, body and commit messages, for U+2014 and U+2013 in every encoded form. |
+| `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Two repo-local jobs running the shared gate (`pnpm check:no-emdash`, `cosyte-no-emdash`) for U+2014 and U+2013 in every encoded form. `no-emdash` scans every tracked file and file name; `no-emdash-messages`, on a pull request only, scans its title, body and commit messages. |
 | `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of the org Scorecard reusable at a published reference. Supply-chain analysis, SARIF into the Security tab. |
 | `.github/workflows/codeql.yml` | push to `main`, pull request to `main`, weekly cron | Thin caller of the org CodeQL reusable at a published reference. |
 | `.github/workflows/no-internal-refs.yml` | push to `main`, pull request to `main` | Thin caller of the org public-surface gate (installing variant) at a published reference. Runs `pnpm check:no-internal-refs` over the README, `docs-content/`, the npm description and keywords, and the `src/` doc comments. |
@@ -28,9 +28,9 @@ a `workflows-*` release (ST37), and they move to the next one together.
 `ci.yml`'s gate is ONE JOB, `verify`, run once per supported Node line: `22`, the
 engine floor the package declares, so the gate proves the floor rather than
 whatever the runner happens to ship, then `24` and `26`, the other lines every
-@cosyte/\* library tests (ST15). The Node 22 leg is still reported as `verify`,
-the context the ruleset requires; the others are reported as `verify (node 24)` and
-`verify (node 26)` and are not required yet (see the last section).
+@cosyte/\* library tests (ST15). The Node 22 leg is still reported as `verify`;
+the others are reported as `verify (node 24)` and `verify (node 26)`. The ruleset
+requires all three (see the last section).
 
 Beside it, `ci.yml`'s `actionlint` job lints every tracked workflow file once, by
 the steps of the shared CI's `actionlint` job, which every other @cosyte/\*
@@ -136,23 +136,30 @@ gating. So the baseline this repo will be measured against does not exist yet.
 ## The branch ruleset
 
 Since 2026-10-08 a branch ruleset, `ci-required-checks`, applies to `main` (the
-default branch). It requires a pull request, linear history, no deletion and no
-force push, and four status checks:
+default branch). It requires seven status checks; the org ruleset
+`baseline-branch-protection` requires a pull request, linear history, no deletion
+and no force push:
 
 | required check | from |
 |---|---|
 | `verify` | `.github/workflows/ci.yml`, the Node 22 leg |
-| `no-emdash` | `.github/workflows/no-emdash.yml` |
+| `verify (node 24)` | `.github/workflows/ci.yml`, the Node 24 leg |
+| `verify (node 26)` | `.github/workflows/ci.yml`, the Node 26 leg |
+| `no-emdash` | `.github/workflows/no-emdash.yml`, the tracked-file job |
 | `no-internal-refs / public-surface` | `.github/workflows/no-internal-refs.yml` |
 | `codeql / analyze (javascript-typescript)` | `.github/workflows/codeql.yml` |
+| `pr-title / conventional-commits` | `.github/workflows/pr-title.yml` |
 
-Read it with `gh api repos/cosyte/dates/rulesets`. Job names are the required
-contexts, so renaming or dropping one of these jobs strands every pull request.
+Read both with `gh api repos/cosyte/dates/rules/branches/main`. Job names are the
+required contexts, so renaming or dropping one of these jobs strands every pull
+request.
 
 **Adding a check to it has one precondition: the workflow whose context you want
 to require has completed at least one run on `main`.** A required status check
 naming a context that has never been reported blocks every pull request
-indefinitely and shows no reason. One caveat carried over from the em-dash gate
-itself: `no-emdash` is required as a whole, and its PR-text half is pull-request
-only. On a push to `main` that step is skipped by design, because by then the
+indefinitely and shows no reason. One caveat from the em-dash gate itself: only
+its tracked-file job, `no-emdash`, is required. Its `no-emdash-messages` job,
+which scans a pull request's title, body and commit messages, must never be:
+Dependabot pastes upstream release notes, dashes included, into a pull request
+body. That job runs on pull requests only, because on a push to `main` the
 message is already written.
