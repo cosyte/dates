@@ -134,6 +134,12 @@ jobs:
       - name: The package description is the catalog's
         run: pnpm run check:catalog
 
+      # The process wiring (`cosyte-process check` from @cosyte/process): the script bodies delegate
+      # to `cosyte-process`, `cosyte-process.config.json` is valid, and the direct `vitest` is
+      # exactly the version process runs.
+      - name: The process wiring is the shared one
+        run: pnpm run check:process
+
   # Workflow linting, as every other @cosyte/* library has it (EN6): the shared CI's `actionlint`
   # job, whose steps run here because this repository does not call the shared CI (see the note at
   # the top). rhysd/actionlint's release binary is downloaded at the version below and checked

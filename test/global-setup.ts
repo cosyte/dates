@@ -33,7 +33,7 @@ export default function setup(): void {
 
   if (existsSync(distEntry) && statSync(distEntry).mtimeMs >= newest) return;
 
-  execFileSync(path.join(packageRoot, "node_modules", ".bin", "tsup"), [], {
+  execFileSync(path.join(packageRoot, "node_modules", ".bin", "cosyte-process"), ["build"], {
     cwd: packageRoot,
     stdio: "inherit",
   });

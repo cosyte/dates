@@ -14,7 +14,7 @@ no gate: it blocks the very pull requests that would fix it.
 
 | workflow | trigger | what it is |
 |---|---|---|
-| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22, 24 and 26: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the PHI scan (`pnpm run phi-scan`), the test suite, the 90% coverage gate (`pnpm run test:coverage`), the suite again under a second host time zone, the em and en dash gate, and the README, CLAUDE.md card and catalog checks. The PHI scan, the dash gate and the three checks are the shared ones from `@cosyte/script-utils` (ST34). A second job, `actionlint`, lints every workflow file with rhysd/actionlint's release binary, at the version and SHA-256 the shared CI pins (EN6). |
+| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22, 24 and 26: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the PHI scan (`pnpm run phi-scan`), the test suite, the 90% coverage gate (`pnpm run test:coverage`), the suite again under a second host time zone, the em and en dash gate, the README, CLAUDE.md card and catalog checks, and the process wiring check (`pnpm run check:process`). The PHI scan, the dash gate and the three document checks are the shared ones from `@cosyte/script-utils` (ST34). Build, typecheck, lint, format and test run through `cosyte-process` from `@cosyte/process`, which owns the tool versions; `cosyte-process check` fails the job when a script body or the direct `vitest` pin drifts from it. A second job, `actionlint`, lints every workflow file with rhysd/actionlint's release binary, at the version and SHA-256 the shared CI pins (EN6). |
 | `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Two repo-local jobs running the shared gate (`pnpm check:no-emdash`, `cosyte-no-emdash`) for U+2014 and U+2013 in every encoded form. `no-emdash` scans every tracked file and file name; `no-emdash-messages`, on a pull request only, scans its title, body and commit messages. |
 | `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of the org Scorecard reusable at a published reference. Supply-chain analysis, SARIF into the Security tab. |
 | `.github/workflows/codeql.yml` | push to `main`, pull request to `main`, weekly cron | Thin caller of the org CodeQL reusable at a published reference. |
@@ -81,8 +81,8 @@ environment is a real human gate (a required reviewer and a deployment branch po
 `main`), runs `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` and `pnpm attw`, and then:
 
 - with changesets pending under `.changeset/`, opens or refreshes the "Version Packages" pull
-  request, which runs `pnpm run version` (`changeset version`, then Prettier over `package.json` and
-  the generated `CHANGELOG.md`);
+  request, which runs `pnpm run version` (`changeset version`, then `cosyte-process format`, which
+  formats `package.json` and the generated `CHANGELOG.md` with the shared Prettier);
 - on the commit that pull request lands, derives the GitHub release notes from the changesets it
   consumed, checks that `CHANGELOG.md` carries a `## <version>` section, and hands the publish to
   the `release` job, which waits in the `release` environment until a reviewer approves it.

@@ -35,6 +35,7 @@ pnpm run test:coverage
 pnpm run test:tz
 pnpm check:no-emdash
 pnpm check:readme && pnpm check:claude-card && pnpm check:catalog
+pnpm check:process
 pnpm check:no-internal-refs
 ```
 
