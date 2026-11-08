@@ -55,7 +55,7 @@ try {
 ## Logging
 
 A validation message quotes the one component at fault and its value (`month must be an integer in
-1-12 ...; received the number 13`). It never assembles the full date into the message. A date of birth
+1 to 12 ...; received the number 13`). It never assembles the full date into the message. A date of birth
 is PHI, so decide whether to log even one component before you log a message.
 
 The package itself writes nothing: no logging, no telemetry, no files, and no network, on any code

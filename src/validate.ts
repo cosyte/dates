@@ -227,12 +227,12 @@ export function validateParts(value: unknown): ValidationResult {
           ? {
               component: "year",
               code: "year-not-four-digits",
-              message: `year must be a four-digit year in ${String(low)}-${String(high)}; received the number ${String(raw)}. This package applies no century window and never interprets a two-digit year`,
+              message: `year must be a four-digit year in ${String(low)} to ${String(high)}; received the number ${String(raw)}. This package applies no century window and never interprets a two-digit year`,
             }
           : {
               component: name,
               code: "out-of-range",
-              message: `${name} must be an integer in ${String(low)}-${String(high)}${RANGE_NOTES[name] ?? ""}; received the number ${String(raw)}`,
+              message: `${name} must be an integer in ${String(low)} to ${String(high)}${RANGE_NOTES[name] ?? ""}; received the number ${String(raw)}`,
             },
       );
       continue;

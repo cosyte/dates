@@ -56,14 +56,14 @@ describe("validateParts, real and impossible dates", () => {
     const issue = issueFor({ year: 1988, month: 13 }, "month");
     expect(issue.code).toBe("out-of-range");
     expect(issue.message).toContain("month");
-    expect(issue.message).toContain("1-12");
+    expect(issue.message).toContain("1 to 12");
   });
 
   it("rejects day 0, naming the component and its range", () => {
     const issue = issueFor({ year: 1988, month: 5, day: 0 }, "day");
     expect(issue.code).toBe("out-of-range");
     expect(issue.message).toContain("day");
-    expect(issue.message).toContain("1-31");
+    expect(issue.message).toContain("1 to 31");
   });
 
   it("rejects 2025-02-29, naming the calendar rule it broke", () => {
@@ -78,7 +78,7 @@ describe("validateParts, real and impossible dates", () => {
     const issue = issueFor({ year: 1988, month: 5, day: 7, hour: 24 }, "hour");
     expect(issue.code).toBe("out-of-range");
     expect(issue.message).toContain("hour");
-    expect(issue.message).toContain("0-23");
+    expect(issue.message).toContain("0 to 23");
   });
 
   it("applies the century rule of the proleptic Gregorian calendar", () => {
@@ -104,10 +104,10 @@ describe("validateParts, real and impossible dates", () => {
   it("rejects minute 60 and second 60, naming each range", () => {
     expect(
       issueFor({ year: 2025, month: 1, day: 1, hour: 0, minute: 60 }, "minute").message,
-    ).toContain("0-59");
+    ).toContain("0 to 59");
     expect(
       issueFor({ year: 2025, month: 1, day: 1, hour: 0, minute: 0, second: 60 }, "second").message,
-    ).toContain("0-59");
+    ).toContain("0 to 59");
   });
 
   it("rejects an offsetMinutes outside -1439 to 1439", () => {
@@ -116,7 +116,7 @@ describe("validateParts, real and impossible dates", () => {
       "offsetMinutes",
     );
     expect(issue.code).toBe("out-of-range");
-    expect(issue.message).toContain("-1439");
+    expect(issue.message).toContain("-1439 to 1439");
     expect(issue.message).toContain("1439");
   });
 
@@ -217,7 +217,7 @@ describe("validateParts, four-digit years only", () => {
   it("names the refusal rather than picking a century", () => {
     const issue = issueFor({ year: 88, month: 5, day: 7 }, "year");
     expect(issue.code).toBe("year-not-four-digits");
-    expect(issue.message).toContain("four-digit year in 1000-9999");
+    expect(issue.message).toContain("four-digit year in 1000 to 9999");
     expect(issue.message).toContain("never interprets a two-digit year");
     expect(issue.message).not.toContain("1988");
     expect(issue.message).not.toContain("2088");

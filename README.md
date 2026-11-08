@@ -136,7 +136,7 @@ package does about that:
   Each of those raises a named error instead.
 - **Diagnostics quote one component, never the whole value.** A validation
   message names the component at fault and the value of THAT component
-  (`month must be an integer in 1-12 ...; received the number 13`). It never
+  (`month must be an integer in 1 to 12 ...; received the number 13`). It never
   assembles the full date into an error string.
 
 What the consumer still owns: whether to log an error message that may contain
