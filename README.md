@@ -10,8 +10,8 @@
 > Work with the dates the @cosyte/* parsers give you, without losing what the wire actually said.
 
 [![npm version](https://img.shields.io/npm/v/@cosyte/dates.svg)](https://www.npmjs.com/package/@cosyte/dates)
-[![CI](https://github.com/cosyte/dates/actions/workflows/ci.yml/badge.svg)](https://github.com/cosyte/dates/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/cosyte/dates/blob/main/LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/cosyte/dates/ci.yml?branch=main&label=CI)](https://github.com/cosyte/dates/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/cosyte/dates/blob/main/LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org)
 
 Date and time utilities for the @cosyte/* healthcare parsers: precision-preserving conversion and validation that never guesses a timezone.
@@ -59,7 +59,7 @@ Not covered on the 0.1 line, and named so the boundary is not a surprise:
 pnpm add @cosyte/dates
 ```
 
-Node.js 22 or later, tested on 22 and 24. ESM only: this package ships no
+Node.js 22 or later, tested on 22, 24, and 26. ESM only: this package ships no
 CommonJS build, so `require()` will not load it.
 
 It carries exactly one runtime dependency, [`temporal-polyfill`][polyfill],
@@ -188,6 +188,19 @@ than one nanosecond, an offset on a value that states no time of day, and any
 zone abbreviation such as `CST` (they are ambiguous across regions, so an IANA
 identifier or a numeric offset is required).
 
+## Support
+
+Questions and bug reports go in [GitHub issues](https://github.com/cosyte/dates/issues). Use
+synthetic values only: a date of birth or an admission time from a real patient is PHI, so reduce a
+report to made-up parts that reproduce it. For help with an integration, see our
+[integration services](https://cosyte.com/integration-services).
+
+## Security
+
+Report a vulnerability privately, never in a public issue, and with no real patient data in it. Our
+[security policy](https://github.com/cosyte/dates/security/policy) says how. A conversion that
+silently moves a value, rather than refusing, is worth reporting that way.
+
 ## Contributing
 
 Issues and pull requests are welcome at
@@ -198,4 +211,6 @@ needs one that pins the exact output rather than a shape.
 
 ## License
 
-MIT, copyright Cosyte LLC. See [LICENSE](https://github.com/cosyte/dates/blob/main/LICENSE).
+MIT, copyright Cosyte LLC. See [LICENSE](https://github.com/cosyte/dates/blob/main/LICENSE). The
+standards this package names belong to their owners; see
+[TRADEMARKS.md](https://github.com/cosyte/dates/blob/main/TRADEMARKS.md).
