@@ -15,7 +15,7 @@ or `pnpm add @cosyte/dates`.
 
 ## Requirements
 
-- **Node.js 22 or later, tested on 22 and 24.**
+- **Node.js 22 or later, tested on 22, 24, and 26.**
 - **ESM only.** The package ships no CommonJS build, so load it with `import`; `require()` will not
   load it.
 

@@ -218,6 +218,8 @@ describe("the README against the house template", () => {
     "Install",
     "Usage",
     "PHI and safety",
+    "Support",
+    "Security",
     "Contributing",
     "License",
   ])('carries the REQUIRED section "%s"', (heading) => {
@@ -254,7 +256,7 @@ describe("the README against the house template", () => {
     const install = section(readme, "Install");
     expect(install).toContain("pnpm add @cosyte/dates");
     // The support line: the floor engines declares, and the Node lines CI runs.
-    expect(install).toContain("Node.js 22 or later, tested on 22 and 24");
+    expect(install).toContain("Node.js 22 or later, tested on 22, 24, and 26");
     expect(install).toContain("ESM");
   });
 });

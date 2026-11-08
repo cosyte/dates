@@ -2,8 +2,8 @@
 
 `@cosyte/dates` validates and converts the date parts the `@cosyte/*` healthcare parsers return,
 without adding precision or guessing a zone. It is TypeScript, ESM only, published to npm under MIT,
-and supports Node.js 22 or later (tested on 22 and 24). Code is in `src/`, tests in `test/`, runnable
-programs in `examples/`, and the docs.cosyte.com pages in `docs-content/`.
+and supports Node.js 22 or later (tested on 22, 24, and 26). Code is in `src/`, tests in `test/`,
+runnable programs in `examples/`, and the docs.cosyte.com pages in `docs-content/`.
 
 ## Build and test
 
@@ -18,7 +18,8 @@ pnpm run test
 
 ## The gate
 
-A pull request is ready when these pass, in this order. CI runs the same steps on Node 22 and 24.
+A pull request is ready when these pass, in this order. CI runs the same steps on Node 22, 24,
+and 26.
 
 ```sh
 pnpm install --frozen-lockfile
