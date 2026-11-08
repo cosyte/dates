@@ -1,0 +1,30 @@
+# scripts/phi-allow-list.txt
+#
+# PHI-scan allow-list: the positive declaration that a token which looks like PHI is not. The shared
+# scan (`pnpm phi-scan`, which runs `cosyte-phi-scan` from @cosyte/script-utils) reads this file;
+# any PHI-shaped token it does not cover is a hit.
+#
+# Format: `<TAG> <value>` per line. `#` comments and blank lines are ignored.
+#   NAME <token>          synthetic person-name word, matched case-insensitively
+#   DOB <value>           synthetic date of birth
+#   ID <value>            synthetic id matching an SSN / MRN / member-id shape
+#   EMAILDOMAIN <domain>  an email domain that is allowed to appear
+#
+# The shared scan is the cross-cutting floor: a dashed SSN shape and an email at an undeclared
+# domain, over the whole repository. It consumes EMAILDOMAIN and ID. This package's values are dates
+# and times, and it holds no names, identifiers or addresses, so there are no field-level detectors.
+#
+# Adding a token is a reviewed, intentional act: never silent.
+
+# --- Reserved / test email domains (RFC 2606 / 6761) ---
+EMAILDOMAIN example.com
+EMAILDOMAIN example.org
+EMAILDOMAIN example.net
+EMAILDOMAIN example.test
+
+# --- Our own contact domain ---
+# `package.json`'s `author` field carries hello@cosyte.com, and the scan reads the whole repository.
+# The floor allows email domains only, not single addresses, so the domain is declared, as hl7, fhir,
+# mllp and astm declare it. KNOW WHAT THIS COSTS: an address at this domain anywhere in the tree now
+# passes the email floor; no patient data belongs at an address of ours.
+EMAILDOMAIN cosyte.com

@@ -15,8 +15,8 @@ name: CI
 # REPO-LOCAL, NOT THE ORG REUSABLE, for two reasons that still hold:
 #
 #   1. The reusable runs a FIXED ladder and no arbitrary repo script, so it
-#      cannot run `scripts/check-no-emdash.sh`. The dash gate has to be in
-#      whichever workflow is the gate, and here it is this one.
+#      cannot run this repository's dash gate, PHI scan or document checks.
+#      Those have to be in whichever workflow is the gate, and here it is this one.
 #   2. Its ladder includes a dual ESM/CJS smoke import. This package is ESM only
 #      by decision, ships no CommonJS build, and would be red on arrival for a
 #      reason no change here should fix.
@@ -97,6 +97,12 @@ jobs:
       - name: Format check
         run: pnpm run format:check
 
+      # The shared PHI scan (`cosyte-phi-scan` from @cosyte/script-utils, ST34): the cross-cutting
+      # floor over the whole repository. The values this package handles are dates of birth and
+      # admission times, so a fixture or an example must never carry a real one.
+      - name: PHI scan
+        run: pnpm run phi-scan
+
       - name: Test
         run: pnpm run test
 
@@ -111,5 +117,20 @@ jobs:
       - name: Test under two host time zones
         run: pnpm run test:tz
 
+      # The shared em and en dash gate (`cosyte-no-emdash`), over every tracked file and file name.
       - name: Em and en dash gate
-        run: bash scripts/check-no-emdash.sh
+        run: pnpm run check:no-emdash
+
+      # The house checks on this repository's documents and its catalog entry, all from
+      # @cosyte/script-utils (RD1, RD2, RD4, PF1). Steps of this job, so they gate a merge.
+      - name: The README follows the house skeleton
+        run: pnpm run check:readme
+
+      - name: The CLAUDE.md card follows its spec
+        run: pnpm run check:claude-card
+
+      - name: Every pointer into the agent notes resolves
+        run: pnpm run check:agent-notes
+
+      - name: The package description is the catalog's
+        run: pnpm run check:catalog

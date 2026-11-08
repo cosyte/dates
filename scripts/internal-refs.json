@@ -1,0 +1,125 @@
+{
+  "$comment": [
+    "The axes of the shared internal-reference gate (@cosyte/script-utils, `cosyte-internal-refs`, ST34) for this repository: no item identifiers, phase or wave words, ADR numbers, internal paths or traceability markers on what a consumer reads (the README, LICENSE, docs-content/, the npm description and keywords, and the doc comments in src/ that compile into dist/index.d.ts).",
+    "accountedTarballFiles: CHANGELOG.md is written by the release from the changesets, which the shared release tooling already refuses when they carry internal identifiers; dist is untracked build output whose source is gated by the doc-comment pass.",
+    "The extra samples are date and time forms a reader of these docs needs, so an engine release that widened a rule into the WORD-N shape reds here instead of deleting them from the documentation. Samples add to the engine floor; nothing here can remove one."
+  ],
+  "projectPrefixes": [
+    "PARSERS-PUBLIC",
+    "DOCS-CONTENT",
+    "KNOWLEDGEBASE",
+    "TERMINOLOGY",
+    "PATHWAYS",
+    "TRANSFORM",
+    "WEBSITE",
+    "STAGING",
+    "SUPPLY",
+    "NCPDP",
+    "ASSETS",
+    "EMDASH",
+    "README",
+    "CONFIG",
+    "DICOM",
+    "SYNTH",
+    "DEID",
+    "CCDA",
+    "ASTM",
+    "MLLP",
+    "FHIR",
+    "CREW",
+    "DOCS",
+    "PERF",
+    "SYNC",
+    "VERSION",
+    "PUBLIC",
+    "HL7",
+    "X12",
+    "IAC",
+    "CLI",
+    "KB",
+    "PW",
+    "PUB",
+    "CI",
+    "REAL",
+    "TERM",
+    "PKG",
+    "WF",
+    "VERIFY"
+  ],
+  "standardsDesignations": [
+    "HL7-(?:V2|V3|CDA|FHIR|OMG|\\d{3,4}[A-Z]?)",
+    "FHIR-R\\d[A-Z]?",
+    "DICOM-(?:SR|RT|SEG|DIR|PS\\d)",
+    "NCPDP-(?:SCRIPT|TELECOM|D\\.\\d)",
+    "X12-\\d{3}[A-Z]?",
+    "X12-\\d{6}",
+    "CCDA-R\\d(?:\\.\\d)?",
+    "ASTM-E\\d+"
+  ],
+  "surfacePaths": [
+    "README.md",
+    "LICENSE",
+    "docs-content"
+  ],
+  "accountedTarballFiles": [
+    "CHANGELOG.md",
+    "dist"
+  ],
+  "sourceDocComments": {
+    "enabled": true,
+    "paths": [
+      "src/*.ts",
+      "src/**/*.ts"
+    ]
+  },
+  "extraSamples": {
+    "internal-identifier": {
+      "positives": [
+        "Item HL7-N is done, and CCDA-P7 with it"
+      ],
+      "negatives": [
+        "ISO-8601 dates and RFC-3339 timestamps, the HL7 v2 DTM and TS types, PID-7 date of birth, OBR-7 observation time, HL7-V2 and FHIR-R4, the IANA zone America/New_York, an offset written UTC-05:00 or +05:30, a year of 1988 and a date of 1988-05-07"
+      ]
+    },
+    "phase-or-wave": {
+      "positives": [
+        "Phase 5b closes it (Phase W, Phase-L and the thirteenth slice landed earlier, in wave 2)"
+      ],
+      "negatives": [
+        "A daylight-saving transition, the phase of the moon, and a clock that stays in phase with the source system"
+      ]
+    },
+    "adr-reference": {
+      "positives": [
+        "Decided in ADR 0015 and restated in ADR-0021"
+      ],
+      "negatives": [
+        "A year such as 2024 alone is a value, not a decision record"
+      ]
+    },
+    "internal-jargon": {
+      "positives": [
+        "This slice adds the helper and the final slice removes it"
+      ],
+      "negatives": [
+        "text.slice(0, 4) and value.slice(5, 7) are TypeScript"
+      ]
+    },
+    "internal-repo-path": {
+      "positives": [
+        "Roadmap operations/roadmaps/dates.md and documentation/decisions/0015-x.md"
+      ],
+      "negatives": [
+        "Conversion is documented in the README, and documentation for the API is generated"
+      ]
+    },
+    "traceability-marker": {
+      "positives": [
+        "Repeating [S-DTM], and Open-question #12 resolves the direction"
+      ],
+      "negatives": [
+        "A character range like [S-Z], and open questions about the feed"
+      ]
+    }
+  }
+}
