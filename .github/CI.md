@@ -38,7 +38,7 @@ library runs as `ci / actionlint` (EN6). It downloads rhysd/actionlint's own
 release binary at one version and checks it against one SHA-256 before unpacking
 it, so the pair moves with the shared job's, by hand: Dependabot cannot see it.
 Never reviewdog/action-actionlint, which from v1.75.0 installs actionlint by
-piping a fork's script to bash. Its context, `actionlint`, is not required yet.
+piping a fork's script to bash. Its context, `actionlint`, is required.
 
 The em-dash scan appears in both `ci.yml` and `no-emdash.yml`, and neither
 subsumes the other. `no-emdash.yml` carries the `edited` activity type so it
@@ -136,7 +136,7 @@ gating. So the baseline this repo will be measured against does not exist yet.
 ## The branch ruleset
 
 Since 2026-10-08 a branch ruleset, `ci-required-checks`, applies to `main` (the
-default branch). It requires seven status checks; the org ruleset
+default branch). It requires eight status checks; the org ruleset
 `baseline-branch-protection` requires a pull request, linear history, no deletion
 and no force push:
 
@@ -145,6 +145,7 @@ and no force push:
 | `verify` | `.github/workflows/ci.yml`, the Node 22 leg |
 | `verify (node 24)` | `.github/workflows/ci.yml`, the Node 24 leg |
 | `verify (node 26)` | `.github/workflows/ci.yml`, the Node 26 leg |
+| `actionlint` | `.github/workflows/ci.yml` |
 | `no-emdash` | `.github/workflows/no-emdash.yml`, the tracked-file job |
 | `no-internal-refs / public-surface` | `.github/workflows/no-internal-refs.yml` |
 | `codeql / analyze (javascript-typescript)` | `.github/workflows/codeql.yml` |

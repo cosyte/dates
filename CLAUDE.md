@@ -9,8 +9,8 @@ runnable programs in `examples/`, and the docs.cosyte.com pages in `docs-content
 
 ## Gate
 
-A PR is green when seven required checks pass: `verify`, `verify (node 24)` and `verify (node 26)`
-(`.github/workflows/ci.yml`), `no-emdash`, `no-internal-refs / public-surface`,
+A PR is green when eight required checks pass: `verify`, `verify (node 24)`, `verify (node 26)`
+and `actionlint` (`.github/workflows/ci.yml`), `no-emdash`, `no-internal-refs / public-surface`,
 `codeql / analyze (javascript-typescript)` and `pr-title / conventional-commits`.
 `.github/CI.md` explains each one. From the repo root, in `verify`'s order:
 
