@@ -217,7 +217,7 @@ function assertKnownTimeZone(timeZone: string): void {
 function assertUsableOffset(offsetMinutes: number): void {
   if (!Number.isInteger(offsetMinutes) || offsetMinutes < -1439 || offsetMinutes > 1439) {
     throw new RangeError(
-      `offsetMinutes must be an integer in -1439-1439 (signed minutes from UTC); received ${String(offsetMinutes)}`,
+      `offsetMinutes must be an integer in -1439 to 1439 (signed minutes from UTC); received ${String(offsetMinutes)}`,
     );
   }
 }

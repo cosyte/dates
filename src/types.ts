@@ -11,20 +11,20 @@
  *    supplied, and an absent `offsetMinutes` means the offset is UNKNOWN, which
  *    is not the same as UTC and not the same as the host zone.
  *
- * `month` is SPEC-NATIVE 1-12, not JavaScript's 0-11.
+ * `month` is SPEC-NATIVE 1 to 12, not JavaScript's 0 to 11.
  */
 export interface DateParts {
-  /** Four digits, 1000-9999. Required. Two-digit years are never interpreted. */
+  /** Four digits, 1000 to 9999. Required. Two-digit years are never interpreted. */
   readonly year?: number;
-  /** 1-12, spec-native. January is 1. */
+  /** 1 to 12, spec-native. January is 1. */
   readonly month?: number;
-  /** 1-31, and a day that exists in the given month of the given year. */
+  /** 1 to 31, and a day that exists in the given month of the given year. */
   readonly day?: number;
-  /** 0-23. */
+  /** 0 to 23. */
   readonly hour?: number;
-  /** 0-59. */
+  /** 0 to 59. */
   readonly minute?: number;
-  /** 0-59. Leap seconds are not representable. */
+  /** 0 to 59. Leap seconds are not representable. */
   readonly second?: number;
   /** Sub-second precision as a fraction of one second: `0 <= fraction < 1`. */
   readonly fraction?: number;
