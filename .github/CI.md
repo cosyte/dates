@@ -14,19 +14,23 @@ no gate: it blocks the very pull requests that would fix it.
 
 | workflow | trigger | what it is |
 |---|---|---|
-| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22 and on Node 24: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the test suite, the 90% coverage gate (`pnpm run test:coverage`), the suite again under a second host time zone, and the em and en dash scan. |
+| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22, 24 and 26: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the test suite, the 90% coverage gate (`pnpm run test:coverage`), the suite again under a second host time zone, and the em and en dash scan. |
 | `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Repo-local gate. Scans every tracked file, plus the pull request's own title, body and commit messages, for U+2014 and U+2013. |
-| `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of `cosyte/.github/.github/workflows/scorecard.yml@main`. Supply-chain analysis, SARIF into the Security tab. |
+| `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of the org Scorecard reusable at a published reference. Supply-chain analysis, SARIF into the Security tab. |
 | `.github/workflows/codeql.yml` | push to `main`, pull request to `main`, weekly cron | Thin caller of the org CodeQL reusable at a published reference. |
 | `.github/workflows/no-internal-refs.yml` | push to `main`, pull request to `main` | Thin caller of the org public-surface gate (installing variant) at a published reference. Runs `pnpm check:no-internal-refs` over the README, `docs-content/`, the npm description and keywords, and the `src/` doc comments. |
-| `.github/workflows/release.yml` | push to `main` | Thin caller of `cosyte/.github/.github/workflows/release.yml@main`: Changesets opens or refreshes the "Version Packages" pull request, and merging that pull request publishes to npm behind the `release` environment. See "The release path" below. |
+| `.github/workflows/pr-title.yml` | pull request to `main` (including `edited`) | Thin caller of the org pull request title check at a published reference: the title, which a squash merge makes the commit, follows Conventional Commits. Its context is `pr-title / conventional-commits`. |
+| `.github/workflows/release.yml` | push to `main` | Thin caller of the org release reusable at a published reference: Changesets opens or refreshes the "Version Packages" pull request, and merging that pull request publishes to npm behind the `release` environment. See "The release path" below. |
+
+Every caller of a `cosyte/.github` reusable names the same published reference,
+a `workflows-*` release (ST37), and they move to the next one together.
 
 `ci.yml` is ONE JOB, run once per supported Node line: `22`, the engine floor
 the package declares, so the gate proves the floor rather than whatever the
-runner happens to ship, and `24`, the other line the @cosyte/\* libraries test.
-The Node 22 leg is still reported as `verify`, the context the ruleset requires;
-the Node 24 leg is reported as `verify (node 24)` and is not required yet (see
-the last section).
+runner happens to ship, then `24` and `26`, the other lines every @cosyte/\*
+library tests (ST15). The Node 22 leg is still reported as `verify`, the context
+the ruleset requires; the others are reported as `verify (node 24)` and
+`verify (node 26)` and are not required yet (see the last section).
 
 The em-dash scan appears in both `ci.yml` and `no-emdash.yml`, and neither
 subsumes the other. `no-emdash.yml` carries the `edited` activity type so it
@@ -88,7 +92,7 @@ CommonJS resolutions are not ones it promises.
 Each row names the precondition that unblocks it, and whether that precondition
 is now met. None of these is an oversight.
 
-### `cosyte/.github/.github/workflows/ci.yml@main`
+### The shared `ci.yml`
 
 **Precondition (a manifest, a lockfile, buildable source and a test suite): MET.
 Not adopted anyway, for two reasons that outlive the precondition.**

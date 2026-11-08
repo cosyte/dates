@@ -35,7 +35,7 @@ jobs:
         # contents:none and startup-fails before any step runs
       security-events: write # upload the SARIF to the Security tab
       id-token: write # the OIDC token the publish path uses
-    uses: cosyte/.github/.github/workflows/scorecard.yml@main
+    uses: cosyte/.github/.github/workflows/scorecard.yml@workflows-2026-11-07-498c7c13c886
     with:
       # PUBLISH IS OFF, DELIBERATELY, AND THIS IS THE ONLY PLACE IT DIFFERS FROM THE
       # hl7 AND github-profile CALLERS, WHICH BOTH TAKE THE DEFAULT (`true`).

@@ -8,8 +8,9 @@ name: Release
 # npmjs.com names this repository, this file (`release.yml`) and the `release` environment, so
 # renaming the file or the environment stops every publish.
 #
-# `@main`, the same reference every other @cosyte/* package's release caller names, so a release of
-# this package runs the same pipeline, with the same gates, as the rest of the suite.
+# A published reference (ST37), the same one every other caller here names, so a release of this
+# package runs the same pipeline, with the same gates, as the rest of the suite, and nothing in it
+# changes until this line moves.
 #
 # A RUN SITTING AT `waiting` IS THE HUMAN GATE, NOT A FAILURE. The shared pipeline's publishing job
 # runs in this repository's `release` environment, which carries a required reviewer and a
@@ -32,7 +33,7 @@ jobs:
       contents: write # create the tag and the GitHub release
       id-token: write # npm provenance
       pull-requests: write # open the "Version Packages" PR
-    uses: cosyte/.github/.github/workflows/release.yml@main
+    uses: cosyte/.github/.github/workflows/release.yml@workflows-2026-11-07-498c7c13c886
     with:
       package-name: "@cosyte/dates"
     secrets: inherit

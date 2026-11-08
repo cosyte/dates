@@ -2,14 +2,15 @@ name: CI
 
 # The gate for this repository, from the commit that gave it a package.
 #
-# ONE JOB, RUN ON EACH SUPPORTED NODE LINE. Every rung runs inside `verify`, once on Node 22 (the
-# floor `engines` declares) and once on Node 24, the two lines the other @cosyte/* libraries test.
+# ONE JOB, RUN ON EACH SUPPORTED NODE LINE. Every rung runs inside `verify`, on Node 22 (the floor
+# `engines` declares), 24 and 26: the lines every @cosyte/* library tests (ST15).
 #
 # THE NODE 22 LEG KEEPS THE CONTEXT NAME `verify`, AND THAT IS LOAD-BEARING. The branch ruleset
 # requires a check named exactly `verify`, and a matrix job is otherwise reported as `verify (22)`,
 # which would leave every pull request waiting for a context nothing emits. So the job name is an
-# expression: the Node 22 leg is `verify`, the Node 24 leg `verify (node 24)`. Only `verify` is
-# required today; requiring the Node 24 leg is a ruleset change, made once it has run on `main`.
+# expression: the Node 22 leg is `verify`, the others `verify (node 24)` and `verify (node 26)`.
+# Only `verify` is required today; requiring the others is a ruleset change, made once each has
+# run on `main`.
 #
 # REPO-LOCAL, NOT THE ORG REUSABLE, for two reasons that still hold:
 #
@@ -20,7 +21,7 @@ name: CI
 #      by decision, ships no CommonJS build, and would be red on arrival for a
 #      reason no change here should fix.
 #
-# Adopting the shared gates is later, separate work (the shared CI brings Node 26 with it).
+# So this job runs Node 26 itself rather than taking it from the shared CI's matrix.
 #
 # The dash gate ALSO has its own workflow (`no-emdash.yml`), and the overlap
 # is on purpose. That one runs on the `edited` activity type so it re-checks a
@@ -52,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [22, 24]
+        node: [22, 24, 26]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -64,7 +65,7 @@ jobs:
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       # Node 22 is the engine floor the package declares, so the gate proves the floor rather than
-      # whatever the runner happens to ship; Node 24 is the current long-term line.
+      # whatever the runner happens to ship; Node 24 and 26 are the newer long-term lines.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
