@@ -62,7 +62,7 @@ jobs:
       # No `version:` input: the action reads `packageManager` from package.json,
       # which is the same pin the lockfile was written by. Naming a version here
       # would be a second source of truth for one fact.
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
       # Node 22 is the engine floor the package declares, so the gate proves the floor rather than
       # whatever the runner happens to ship; Node 24 and 26 are the newer long-term lines.
