@@ -21,6 +21,9 @@ concurrency:
 
 jobs:
   no-internal-refs:
-    uses: cosyte/.github/.github/workflows/gate-no-internal-refs-install.yml@acaa6cbe1745e950837e61849ed84bf9e34fec68 # workflows-2026-09-22-acaa6cbe1745
+    # A published reference (ST37): a `workflows-*` release of cosyte/.github. Those releases
+    # are immutable, so the tag is locked to one commit, and every caller here moves to the
+    # next reference together.
+    uses: cosyte/.github/.github/workflows/gate-no-internal-refs-install.yml@workflows-2026-11-07-498c7c13c886
     permissions:
       contents: read

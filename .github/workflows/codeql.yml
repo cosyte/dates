@@ -11,14 +11,12 @@ name: CodeQL
 # `.github/CI.md` recorded the same three under "the org reusables this repo does NOT call
 # yet" before this file existed.
 #
-# A PUBLISHED REFERENCE, NOT `@main`, AND THAT IS A DEPARTURE FROM `scorecard.yml`. `@main` is a
-# branch, so it delivers every later change made in `cosyte/.github` on that repository's clock
-# rather than this one's, reviewed by nobody here. The reference below names one commit
-# (`f29e9cc83cac4bd5fc73a68cefa22f136cd39608`) and never names another, so nothing reaches this
-# repo until this line is edited. `cosyte/.github`'s own README and the header of the reusable
-# both ask callers for this form; the newest reference is on that repo's releases page, and each
-# release's notes say what a caller adopting it has to act on. The note for this one lists only
-# `release.yml` changes, which this caller does not use.
+# A PUBLISHED REFERENCE, NOT `@main` (ST37), like every caller here. `@main` is a branch, so it
+# delivers every later change made in `cosyte/.github` on that repository's clock rather than this
+# one's, reviewed by nobody here. The reference below is an immutable release that names one
+# commit and never names another, so nothing reaches this repo until this line is edited, and
+# every caller here moves to the next reference together. The newest reference is on that repo's
+# releases page, and each release's notes say what a caller adopting it has to act on.
 #
 # NO INPUTS, BY DEFAULT RATHER THAN BY OMISSION. The reusable defaults `languages` to
 # `["javascript-typescript"]` and `queries` to `security-and-quality`. `src/` is TypeScript, so
@@ -52,4 +50,4 @@ jobs:
       security-events: write # upload the SARIF to this repository's Security tab
       contents: read # required to resolve the reusable and check the tree out
       actions: read # the reusable's own `analyze` job declares it
-    uses: cosyte/.github/.github/workflows/codeql.yml@workflows-2026-09-04-f29e9cc83cac
+    uses: cosyte/.github/.github/workflows/codeql.yml@workflows-2026-11-07-498c7c13c886
