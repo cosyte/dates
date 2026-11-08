@@ -9,8 +9,9 @@ runnable programs in `examples/`, and the docs.cosyte.com pages in `docs-content
 
 ## Gate
 
-A PR is green when four required checks pass: `verify` (`.github/workflows/ci.yml`), `no-emdash`,
-`no-internal-refs / public-surface` and `codeql / analyze (javascript-typescript)`.
+A PR is green when seven required checks pass: `verify`, `verify (node 24)` and `verify (node 26)`
+(`.github/workflows/ci.yml`), `no-emdash`, `no-internal-refs / public-surface`,
+`codeql / analyze (javascript-typescript)` and `pr-title / conventional-commits`.
 `.github/CI.md` explains each one. From the repo root, in `verify`'s order:
 
 ```bash
@@ -27,10 +28,10 @@ pnpm check:readme && pnpm check:claude-card && pnpm check:catalog
 global one): run `corepack enable pnpm --install-directory <dir>` and put `<dir>` first on `PATH`.
 
 CI runs `verify` on Node 22, the engine floor, and on Node 24 and 26; the Node 22 leg is the
-required `verify` context. Lint, format, types, the build and the 90% coverage gate come from the
-shared `@cosyte/*` configs. The `no-emdash` check also scans the PR title, body and commit
-messages, which become the squash commit. CodeQL runs only in CI. A change under `src/` adds a
-changeset (`pnpm changeset`; `.changeset/README.md` says which bump).
+`verify` context. Lint, format, types, the build and the 90% coverage gate come from the shared
+`@cosyte/*` configs. The `no-emdash-messages` check, never required, scans the PR title, body and
+commit messages, which become the squash commit. CodeQL runs only in CI. A change under `src/`
+adds a changeset (`pnpm changeset`; `.changeset/README.md` says which bump).
 
 ## Hazard
 
