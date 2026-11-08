@@ -14,7 +14,7 @@ no gate: it blocks the very pull requests that would fix it.
 
 | workflow | trigger | what it is |
 |---|---|---|
-| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22, 24 and 26: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the PHI scan (`pnpm run phi-scan`), the test suite, the 90% coverage gate (`pnpm run test:coverage`), the suite again under a second host time zone, the em and en dash gate, and the README, CLAUDE.md card, agent-notes and catalog checks. The PHI scan, the dash gate and the four checks are the shared ones from `@cosyte/script-utils` (ST34). |
+| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22, 24 and 26: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the PHI scan (`pnpm run phi-scan`), the test suite, the 90% coverage gate (`pnpm run test:coverage`), the suite again under a second host time zone, the em and en dash gate, and the README, CLAUDE.md card, agent-notes and catalog checks. The PHI scan, the dash gate and the four checks are the shared ones from `@cosyte/script-utils` (ST34). A second job, `actionlint`, lints every workflow file with rhysd/actionlint's release binary, at the version and SHA-256 the shared CI pins (EN6). |
 | `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Repo-local job running the shared gate (`pnpm check:no-emdash`, `cosyte-no-emdash`). Scans every tracked file and file name, plus the pull request's own title, body and commit messages, for U+2014 and U+2013 in every encoded form. |
 | `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of the org Scorecard reusable at a published reference. Supply-chain analysis, SARIF into the Security tab. |
 | `.github/workflows/codeql.yml` | push to `main`, pull request to `main`, weekly cron | Thin caller of the org CodeQL reusable at a published reference. |
@@ -25,12 +25,20 @@ no gate: it blocks the very pull requests that would fix it.
 Every caller of a `cosyte/.github` reusable names the same published reference,
 a `workflows-*` release (ST37), and they move to the next one together.
 
-`ci.yml` is ONE JOB, run once per supported Node line: `22`, the engine floor
-the package declares, so the gate proves the floor rather than whatever the
-runner happens to ship, then `24` and `26`, the other lines every @cosyte/\*
-library tests (ST15). The Node 22 leg is still reported as `verify`, the context
-the ruleset requires; the others are reported as `verify (node 24)` and
+`ci.yml`'s gate is ONE JOB, `verify`, run once per supported Node line: `22`, the
+engine floor the package declares, so the gate proves the floor rather than
+whatever the runner happens to ship, then `24` and `26`, the other lines every
+@cosyte/\* library tests (ST15). The Node 22 leg is still reported as `verify`,
+the context the ruleset requires; the others are reported as `verify (node 24)` and
 `verify (node 26)` and are not required yet (see the last section).
+
+Beside it, `ci.yml`'s `actionlint` job lints every tracked workflow file once, by
+the steps of the shared CI's `actionlint` job, which every other @cosyte/\*
+library runs as `ci / actionlint` (EN6). It downloads rhysd/actionlint's own
+release binary at one version and checks it against one SHA-256 before unpacking
+it, so the pair moves with the shared job's, by hand: Dependabot cannot see it.
+Never reviewdog/action-actionlint, which from v1.75.0 installs actionlint by
+piping a fork's script to bash. Its context, `actionlint`, is not required yet.
 
 The em-dash scan appears in both `ci.yml` and `no-emdash.yml`, and neither
 subsumes the other. `no-emdash.yml` carries the `edited` activity type so it
@@ -106,13 +114,13 @@ Not adopted anyway, for two reasons that outlive the precondition.**
    would be red for a reason no change here should fix.
 
 Adopting it later is a small change and nothing in `ci.yml` blocks it: delete the
-steps, add a `uses:`. If that happens, note that the reusable's `run-actionlint`
-input defaults to `true`, which is how workflow linting would arrive here, and
-that setting it to `false` does not strand a pull request but silently
-un-requires the gate (a job skipped by a job-level conditional still emits its
-check run, concluding `skipped`, which GitHub treats as successful). That is
-recorded in the reusable itself and repeated here because it is the kind of thing
-a caller gets wrong once.
+steps and the local `actionlint` job, add a `uses:`. If that happens, note that the
+reusable's `run-actionlint` input defaults to `true`, which is how workflow linting
+would then arrive here (as `ci / actionlint`), and that setting it to `false` does
+not strand a pull request but silently un-requires the gate (a job skipped by a
+job-level conditional still emits its check run, concluding `skipped`, which GitHub
+treats as successful). That is recorded in the reusable itself and repeated here
+because it is the kind of thing a caller gets wrong once.
 
 ### The drift-check reusable
 

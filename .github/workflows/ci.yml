@@ -2,8 +2,10 @@ name: CI
 
 # The gate for this repository, from the commit that gave it a package.
 #
-# ONE JOB, RUN ON EACH SUPPORTED NODE LINE. Every rung runs inside `verify`, on Node 22 (the floor
-# `engines` declares), 24 and 26: the lines every @cosyte/* library tests (ST15).
+# ONE GATE JOB, RUN ON EACH SUPPORTED NODE LINE. Every rung runs inside `verify`, on Node 22 (the
+# floor `engines` declares), 24 and 26: the lines every @cosyte/* library tests (ST15). Beside it,
+# `actionlint` lints the workflow files once, as the shared CI's job of that name does in every
+# other library (see the note on that job below).
 #
 # THE NODE 22 LEG KEEPS THE CONTEXT NAME `verify`, AND THAT IS LOAD-BEARING. The branch ruleset
 # requires a check named exactly `verify`, and a matrix job is otherwise reported as `verify (22)`,
@@ -134,3 +136,52 @@ jobs:
 
       - name: The package description is the catalog's
         run: pnpm run check:catalog
+
+  # Workflow linting, as every other @cosyte/* library has it (EN6): the shared CI's `actionlint`
+  # job, whose steps run here because this repository does not call the shared CI (see the note at
+  # the top). rhysd/actionlint's release binary is downloaded at the version below and checked
+  # against the SHA-256 below before it is unpacked, so a changed asset fails the job; the pair is
+  # the one the shared job pins (cosyte/.github#93), and a new version changes both values together,
+  # here and there. Never reviewdog/action-actionlint, which from v1.75.0 installs actionlint by
+  # piping a fork's script to bash. The job fails on actionlint's own exit status, over every
+  # tracked workflow file. shellcheck is preinstalled on the hosted runner, and actionlint silently
+  # skips its shell checks without it, so the install step refuses to continue when it is missing.
+  #
+  # A job of its own rather than a rung of `verify`: it needs no Node and no install, and inside the
+  # matrix it would lint the same files three times. Its context is `actionlint`, which no ruleset
+  # requires yet; requiring it is a ruleset change, made once it has run on `main`.
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ACTIONLINT_VERSION: "1.7.12"
+      ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install actionlint at the pinned version and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL --retry 3 -o "${RUNNER_TEMP}/${tarball}" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${tarball}"
+          echo "${ACTIONLINT_SHA256}  ${RUNNER_TEMP}/${tarball}" | sha256sum -c -
+          tar -xzf "${RUNNER_TEMP}/${tarball}" -C "${RUNNER_TEMP}" actionlint
+          "${RUNNER_TEMP}/actionlint" --version
+          shellcheck --version
+
+      - name: actionlint over .github/workflows/
+        shell: bash
+        run: |
+          set -euo pipefail
+          listed="$(git ls-files -- '.github/workflows/*.yml' '.github/workflows/*.yaml')"
+          if [ -z "${listed}" ]; then
+            echo "::error::no workflow file found under .github/workflows/"
+            exit 1
+          fi
+          mapfile -t files <<< "${listed}"
+          "${RUNNER_TEMP}/actionlint" -color "${files[@]}"
+          echo "actionlint clean over ${#files[@]} workflow file(s)."
