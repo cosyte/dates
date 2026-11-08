@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3
+
+### Patch Changes
+
+- 8c85aa7: The README follows the house layout, with sections for support and security, and the installation page names Node 26, which CI now tests.
+
 ## 0.1.2
 
 ### Patch Changes
