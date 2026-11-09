@@ -192,8 +192,8 @@ identifier or a numeric offset is required).
 
 Questions and bug reports go in [GitHub issues](https://github.com/cosyte/dates/issues). Use
 synthetic values only: a date of birth or an admission time from a real patient is PHI, so reduce a
-report to made-up parts that reproduce it. For help with an integration, see our
-[integration services](https://cosyte.com/integration-services).
+report to made-up parts that reproduce it. Need an integration built, or hosted and run for you?
+See our [integration services](https://cosyte.com/integration-services).
 
 ## Security
 
