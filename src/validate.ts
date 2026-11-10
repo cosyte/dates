@@ -336,7 +336,7 @@ export function isValidParts(value: unknown): value is DateParts {
 }
 
 /**
- * Validate and return the recognised components, or throw {@link DatePartsError}
+ * Validate and return the recognized components, or throw {@link DatePartsError}
  * carrying the same diagnostics {@link validateParts} would have reported.
  *
  * @example
