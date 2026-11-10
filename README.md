@@ -135,14 +135,18 @@ package does about that:
   fallback, no midnight for a date with no time, no picking one side of a
   daylight-saving transition, no rounding a sub-second value to make it fit.
   Each of those raises a named error instead.
-- **Diagnostics quote one component, never the whole value.** A validation
+- **Most diagnostics quote one component, not the whole value.** A validation
   message names the component at fault and the value of THAT component
-  (`month must be an integer in 1 to 12 ...; received the number 13`). It never
-  assembles the full date into an error string.
+  (`month must be an integer in 1 to 12 ...; received the number 13`). Two kinds
+  name the whole date: a `no-such-calendar-date` message names the day, the
+  month and the year (`day 31 does not exist: April 1988 has 30 days`), and so
+  does a `DatePartsError` message that joins one; an `AmbiguousLocalTimeError`
+  message names the whole local date and time. An issue's `component` and
+  `code` carry no value.
 
 What the consumer still owns: whether to log an error message that may contain
-one component of a patient's date of birth, how the parts got there, and where
-the converted value goes next. This package is a pure function in the middle.
+a patient's date of birth or one component of it, how the parts got there, and
+where the converted value goes next. This package is a pure function in the middle.
 
 ## API
 

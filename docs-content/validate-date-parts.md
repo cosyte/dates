@@ -103,7 +103,7 @@ If your source holds sub-second time under another name, such as milliseconds, c
 
 ## Log a fault without logging the date
 
-A message quotes the one component at fault and its value, never the whole date:
+Most messages quote only the component at fault and its value:
 
 ```ts runnable
 import { validateParts } from "@cosyte/dates";
@@ -112,8 +112,19 @@ const result = validateParts({ year: 1988, month: 13, day: 7 });
 result.valid ? "" : result.issues[0]?.message; // => "month must be an integer in 1 to 12 (spec-native, January is 1, not 0); received the number 13"
 ```
 
-A date of birth is PHI, and even one component of it may be. To log nothing from the value, log the
-`component` and `code` of each issue and leave out the `message`.
+A `no-such-calendar-date` message does not. It names the day, the month and the year, which is the
+whole date:
+
+```ts runnable
+import { validateParts } from "@cosyte/dates";
+
+const result = validateParts({ year: 1988, month: 4, day: 31 });
+result.valid ? "" : result.issues[0]?.message; // => "day 31 does not exist: April 1988 has 30 days"
+```
+
+The message of a `DatePartsError` joins its issues' messages, so it can carry the whole date too. A
+date of birth is PHI. To log nothing from the value, log the `component` and `code` of each issue
+and leave out the `message`.
 
 ## Reference
 

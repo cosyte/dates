@@ -38,8 +38,7 @@ state.
   call here.
 
 Every converter validates its own argument. If you validate a value and then convert it, it is
-validated twice; that costs little next to the conversion, and it is what lets a converter refuse
-an invalid value on its own.
+validated twice. That is what lets a converter refuse an invalid value on its own.
 
 ## Import cost
 

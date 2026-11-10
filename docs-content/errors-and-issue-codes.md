@@ -47,8 +47,8 @@ option was passed. See [`MissingZoneError`](./api/README.md#missingzoneerror).
 ### `AmbiguousLocalTimeError`
 
 The local time does not exist in the named zone, because a daylight-saving transition skips it, or
-exists twice, because one repeats it. The message says which, and for a repeated time names both
-candidate offsets. See [`AmbiguousLocalTimeError`](./api/README.md#ambiguouslocaltimeerror).
+exists twice, because one repeats it. The message names the whole local date and time and the zone,
+says which, and for a repeated time names both candidate offsets. See [`AmbiguousLocalTimeError`](./api/README.md#ambiguouslocaltimeerror).
 
 ### `RangeError`
 
@@ -81,4 +81,6 @@ wrong. The type of `code` is [`IssueCode`](./api/README.md#issuecode).
 | `offset-without-time-of-day` | `offsetMinutes`  | `offsetMinutes` is set on a value with no `hour`                                                  |
 | `no-such-calendar-date`      | `day`            | each component is in range, but together they name no real date                                   |
 
-A message quotes the one component at fault and its value, never the whole date.
+Most messages quote only the component at fault and its value. A `no-such-calendar-date` message
+names the day, the month and the year, which is the whole date, and so does the message of a
+`DatePartsError` that carries one. The `component` and `code` of an issue carry no value.

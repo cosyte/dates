@@ -111,10 +111,12 @@ second polyfill or a native `Temporal`. Two implementations do not share `instan
 
 ## Logging
 
-A validation message quotes the one component at fault and its value (`month must be an integer in
-1 to 12 ...; received the number 13`). It never assembles the full date into the message. A date of
-birth is PHI, so decide whether to log even one component before you log a message; the `component`
-and `code` of an issue carry no value at all.
+Most validation messages quote only the component at fault and its value (`month must be an
+integer in 1 to 12 ...; received the number 13`). A `no-such-calendar-date` message names the whole
+date (`day 31 does not exist: April 1988 has 30 days`), and so does a `DatePartsError` message that
+joins one. An `AmbiguousLocalTimeError` message names the whole local date and time. A date of birth
+is PHI, so decide what to log before you log a message; the `component` and `code` of an issue carry
+no value at all.
 
 The package itself writes nothing: no logging, no telemetry, no files, and no network, on any code
 path.

@@ -64,10 +64,24 @@ transitions, so it is never refused this way.
 ## Zone names and abbreviations
 
 A zone name from the IANA time zone database, such as `America/Chicago`, carries the place's
-daylight-saving rules. An abbreviation does not: `CST` is used for more than one offset around the
-world, and Temporal does not know it, so the call throws a `RangeError`. A few abbreviations, such as `EST`, are accepted
-because they are also IANA names, but each one is a fixed offset with no daylight-saving time. Name
-the place, or pass a fixed offset only when the sender meant one.
+daylight-saving rules. An abbreviation names no place: `CST` is used for more than one offset around
+the world, and Temporal does not know it, so the call throws a `RangeError`. A few abbreviations are
+accepted because they are also IANA names, and they do not behave alike. `EST` is UTC-05:00 all
+year. `CET` follows daylight-saving time, UTC+01:00 in January and UTC+02:00 in July:
+
+```ts runnable
+import { toInstant } from "@cosyte/dates";
+
+const january = { year: 2026, month: 1, day: 15, hour: 12, minute: 0 };
+const july = { year: 2026, month: 7, day: 15, hour: 12, minute: 0 };
+
+toInstant(january, { timeZone: "EST" }).toString(); // => "2026-01-15T17:00:00Z"
+toInstant(july, { timeZone: "EST" }).toString(); // => "2026-07-15T17:00:00Z"
+toInstant(january, { timeZone: "CET" }).toString(); // => "2026-01-15T11:00:00Z"
+toInstant(july, { timeZone: "CET" }).toString(); // => "2026-07-15T10:00:00Z"
+```
+
+Name the place, or pass a fixed offset only when the sender meant one.
 
 ## Put it into practice
 
