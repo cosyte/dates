@@ -1,26 +1,26 @@
 {
   "docs": [
     "intro",
+    { "type": "category", "label": "Installation", "items": ["installation"] },
+    { "type": "category", "label": "Quickstart", "items": ["quickstart"] },
+    { "type": "category", "label": "Tutorials", "items": ["order-events-from-two-senders"] },
     {
       "type": "category",
-      "label": "Installation",
-      "items": ["installation"]
+      "label": "How-to guides",
+      "items": ["validate-date-parts", "render-and-convert", "get-an-instant"]
     },
     {
       "type": "category",
-      "label": "Quickstart",
-      "items": ["quickstart"]
-    },
-    {
-      "type": "category",
-      "label": "Core concepts",
-      "collapsed": false,
+      "label": "Explanation",
       "items": ["concepts-precision", "concepts-zones"]
     },
     {
       "type": "category",
-      "label": "Troubleshooting",
-      "items": ["troubleshooting"]
-    }
+      "label": "Reference",
+      "items": ["date-parts-contract", "errors-and-issue-codes"]
+    },
+    { "type": "category", "label": "Troubleshooting", "items": ["troubleshooting"] },
+    "testing-and-quality",
+    "performance"
   ]
 }

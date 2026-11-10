@@ -277,7 +277,7 @@ function resolveTimeZone(parts: DateParts, options: ZoneOptions | undefined): st
  * value does not carry. Use {@link toTemporal} for those.
  *
  * Requires a zone. If the value carries `offsetMinutes` that offset is used and
- * PRESERVED EXACTLY, never normalised to UTC or to the host zone, and `options`
+ * PRESERVED EXACTLY, never normalized to UTC or to the host zone, and `options`
  * are not consulted. Otherwise `options.timeZone` or `options.offsetMinutes`
  * must say which zone the local time is in.
  *

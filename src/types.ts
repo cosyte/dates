@@ -81,21 +81,27 @@ export type IssueCode =
 export interface ValidationIssue {
   /** The component at fault, or `'value'` when the argument itself is wrong. */
   readonly component: PartName | "value";
+  /** Which rule the component broke, one of the {@link IssueCode} values. */
   readonly code: IssueCode;
   /** Human-readable, names the component and the range or calendar rule broken. */
   readonly message: string;
 }
 
-/** A validated value, carrying only the recognised components that were present. */
+/** A validated value, carrying only the recognized components that were present. */
 export interface ValidPartsResult {
+  /** Always `true` on this branch of {@link ValidationResult}. */
   readonly valid: true;
+  /** The recognized components the value carried, and no others. */
   readonly parts: DateParts;
+  /** The least significant component present. */
   readonly precision: Precision;
 }
 
 /** An invalid value, with every fault found rather than only the first. */
 export interface InvalidPartsResult {
+  /** Always `false` on this branch of {@link ValidationResult}. */
   readonly valid: false;
+  /** Every fault found, at least one. */
   readonly issues: readonly ValidationIssue[];
 }
 

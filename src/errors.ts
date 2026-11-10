@@ -17,6 +17,7 @@ import type { ValidationIssue } from "./types.js";
  * ```
  */
 export class DatePartsError extends Error {
+  /** Every fault `validateParts()` found in the value, in the order it found them. */
   readonly issues: readonly ValidationIssue[];
 
   /** @param issues - Every fault `validateParts()` found in the value. */

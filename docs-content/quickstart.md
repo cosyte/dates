@@ -1,16 +1,17 @@
 ---
 id: quickstart
 title: Quickstart
-sidebar_position: 1
+sidebar_label: Quickstart
 description: "Validate a date-parts value, render it at its own precision, and convert it to Temporal in one short program."
 ---
 
 # Quickstart
 
 A complete program. Save it as `quickstart.mjs` in a project where `@cosyte/dates` is installed and
-run it with `node quickstart.mjs`.
+run it with `node quickstart.mjs`. It is plain JavaScript that also compiles as TypeScript, so you
+can save it as a `.ts` file in a TypeScript project instead.
 
-```js
+```ts runnable
 import { precisionOf, toISO, toInstant, toTemporal, validateParts } from "@cosyte/dates";
 
 // A date of birth that arrived as a year and nothing more. It stays a year.
@@ -30,12 +31,12 @@ const unknownZone = { year: 1988, month: 5, day: 7, hour: 13, minute: 45 };
 try {
   toInstant(unknownZone);
 } catch (error) {
-  console.log(error.name);
+  console.log(error instanceof Error ? error.name : error);
 }
 
 // A date that does not exist is refused, and says which rule it broke.
 const result = validateParts({ year: 2025, month: 2, day: 29 });
-console.log(result.valid ? "valid" : result.issues[0].message);
+console.log(result.valid ? "valid" : result.issues[0]?.message);
 ```
 
 It prints:
@@ -55,10 +56,19 @@ The output is the same under every host `TZ`: nothing here reads the machine's t
 A parts value is a plain object: `year` (four digits), then optionally `month` (1 to 12, January is
 1), `day`, `hour`, `minute`, `second`, `fraction` (of one second) and `offsetMinutes` (signed minutes
 from UTC). Components run from `year` downward with no gaps, and whichever is the least significant
-one present is the value's precision. The [Precision](./concepts-precision) page has the full rules.
+one present is the value's precision. [The date-parts contract](./date-parts-contract.md) has every
+range and rule.
 
 ## Next
 
-- [Precision](./concepts-precision): what a parts value is, and why a year stays a year.
-- [Zones and instants](./concepts-zones): when an absolute instant is possible, and when it is refused.
-- [Troubleshooting](./troubleshooting): every error and issue code, and what to do about it.
+- [Put two senders' timestamps on one timeline](./order-events-from-two-senders.md): the tutorial,
+  from a handful of local times to one ordered list of instants.
+- [Validate a date-parts value](./validate-date-parts.md): check a value before you trust it, and
+  read every fault.
+- [Render or convert a value at its own precision](./render-and-convert.md): ISO 8601 strings and
+  Temporal objects.
+- [Get an instant from a local time](./get-an-instant.md): say which zone applies, and settle a
+  daylight-saving refusal.
+- [Precision](./concepts-precision.md) and [Zones and instants](./concepts-zones.md): why it works
+  this way.
+- [Troubleshooting](./troubleshooting.md): what to do when a call refuses.
