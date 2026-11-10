@@ -30,6 +30,19 @@ function atLeast(precision: Precision, floor: Precision): boolean {
   return PRECISION_LADDER.indexOf(precision) >= PRECISION_LADDER.indexOf(floor);
 }
 
+/**
+ * A component the validated value carries.
+ *
+ * Every caller asks only for a component at or above the value's precision, and
+ * `validateParts` admits a value only when its components run from year down to
+ * its precision with no gap, so the component is always present here.
+ */
+function stated(parts: DateParts, name: Exclude<Precision, "fraction">): number {
+  const held = parts[name];
+  /* v8 ignore next -- callers ask only for a component at or above the precision, and validateParts admits no gap from year down to it, so the component is always present and the fallback only satisfies the type checker */
+  return held ?? 0;
+}
+
 function pad(value: number, width: number): string {
   return String(value).padStart(width, "0");
 }
@@ -60,6 +73,7 @@ function formatOffset(offsetMinutes: number): string {
  */
 function nanosecondsOf(fraction: number): number {
   const reading = readFraction(fraction);
+  /* v8 ignore next -- every converter passes a fraction validateParts has already read through this same readFraction and accepted, and the reading is a pure function of the number */
   if (!reading.ok) throw new DatePartsError([reading.issue]);
   return reading.nanoseconds;
 }
@@ -108,24 +122,25 @@ export function toISO(value: unknown): string {
   const { parts, precision } = check(value);
   const suffix = parts.offsetMinutes === undefined ? "" : formatOffset(parts.offsetMinutes);
 
-  let out = pad(parts.year ?? 0, 4);
+  let out = pad(stated(parts, "year"), 4);
   if (precision === "year") return out;
 
-  out += `-${pad(parts.month ?? 0, 2)}`;
+  out += `-${pad(stated(parts, "month"), 2)}`;
   if (precision === "month") return out;
 
-  out += `-${pad(parts.day ?? 0, 2)}`;
+  out += `-${pad(stated(parts, "day"), 2)}`;
   if (precision === "day") return out;
 
-  out += `T${pad(parts.hour ?? 0, 2)}`;
+  out += `T${pad(stated(parts, "hour"), 2)}`;
   if (precision === "hour") return out + suffix;
 
-  out += `:${pad(parts.minute ?? 0, 2)}`;
+  out += `:${pad(stated(parts, "minute"), 2)}`;
   if (precision === "minute") return out + suffix;
 
-  out += `:${pad(parts.second ?? 0, 2)}`;
+  out += `:${pad(stated(parts, "second"), 2)}`;
   if (precision === "second") return out + suffix;
 
+  /* v8 ignore next -- precision is fraction on this line, so the value carries a fraction and the fallback only satisfies the type checker */
   out += formatFraction(parts.fraction ?? 0);
   return out + suffix;
 }
@@ -171,14 +186,14 @@ export function toTemporal(value: unknown): TemporalValue {
     );
   }
 
-  const year = parts.year ?? 0;
-  const month = parts.month ?? 0;
+  const year = stated(parts, "year");
+  const month = stated(parts, "month");
 
   if (precision === "month") {
     return Temporal.PlainYearMonth.from({ year, month }, { overflow: "reject" });
   }
 
-  const day = parts.day ?? 0;
+  const day = stated(parts, "day");
   if (precision === "day") {
     return Temporal.PlainDate.from({ year, month, day }, { overflow: "reject" });
   }
@@ -187,7 +202,7 @@ export function toTemporal(value: unknown): TemporalValue {
     year,
     month,
     day,
-    hour: parts.hour ?? 0,
+    hour: stated(parts, "hour"),
     minute: parts.minute ?? 0,
     second: parts.second ?? 0,
     ...subSecondFields(parts.fraction),
@@ -308,10 +323,10 @@ export function toZonedDateTime(value: unknown, options?: ZoneOptions): Temporal
   const timeZone = resolveTimeZone(parts, options);
   const local = Temporal.PlainDateTime.from(
     {
-      year: parts.year ?? 0,
-      month: parts.month ?? 0,
-      day: parts.day ?? 0,
-      hour: parts.hour ?? 0,
+      year: stated(parts, "year"),
+      month: stated(parts, "month"),
+      day: stated(parts, "day"),
+      hour: stated(parts, "hour"),
       minute: parts.minute ?? 0,
       second: parts.second ?? 0,
       ...subSecondFields(parts.fraction),

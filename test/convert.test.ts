@@ -73,6 +73,39 @@ describe("toTemporal, a calendar date stays a calendar date", () => {
   });
 });
 
+// An hour-precision value is the shallowest that reaches the timeline. It states
+// no minute, second or fraction, and Temporal has no type without them, so those
+// read as zero in the result while precisionOf still reports `hour`.
+describe("an hour-precision value converts with zero minutes below it", () => {
+  const ONE_PM = { ...MAY_SEVENTH, hour: 13 } as const;
+
+  it("returns a PlainDateTime at the top of the hour, with no zone", () => {
+    const converted = toTemporal(ONE_PM);
+    expect(converted).toBeInstanceOf(Temporal.PlainDateTime);
+    expect(converted.toString()).toBe("1988-05-07T13:00:00");
+    expect(precisionOf(ONE_PM)).toBe("hour");
+  });
+
+  it("returns a ZonedDateTime at the value own offset when it states one", () => {
+    const converted = toTemporal({ ...ONE_PM, offsetMinutes: -300 });
+    expect(converted).toBeInstanceOf(Temporal.ZonedDateTime);
+    expect(converted.toString()).toBe("1988-05-07T13:00:00-05:00[-05:00]");
+  });
+
+  it("places it on the timeline in a stated zone", () => {
+    const zoned = toZonedDateTime(ONE_PM, { timeZone: "America/New_York" });
+    expect(zoned.toString()).toBe("1988-05-07T13:00:00-04:00[America/New_York]");
+    expect(zoned.minute).toBe(0);
+    expect(zoned.second).toBe(0);
+    expect(zoned.nanosecond).toBe(0);
+    expect(toInstant(ONE_PM, { offsetMinutes: 330 }).toString()).toBe("1988-05-07T07:30:00Z");
+  });
+
+  it("still refuses an hour-precision value with no zone", () => {
+    expect(() => toInstant(ONE_PM)).toThrow(MissingZoneError);
+  });
+});
+
 // Criterion: a value whose least significant present component is year or month
 // renders a string of exactly that precision.
 describe("toISO renders at the value own precision", () => {
