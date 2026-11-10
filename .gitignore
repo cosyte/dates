@@ -4,3 +4,4 @@ coverage/
 .tmp/
 *.tsbuildinfo
 dist-artifacts/
+.cosyte-doc-snippets/
