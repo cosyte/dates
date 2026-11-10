@@ -188,3 +188,118 @@ jobs:
           mapfile -t files <<< "${listed}"
           "${RUNNER_TEMP}/actionlint" -color "${files[@]}"
           echo "actionlint clean over ${#files[@]} workflow file(s)."
+
+  # THE PERFORMANCE STANDARD'S TWO PULL REQUEST JOBS, the steps of the shared CI's `scaling-gate`
+  # and `bench-compare` jobs, run here because this repository does not call the shared CI (see the
+  # note at the top). Both run beside `verify`, never after it, so a pull request waits for the
+  # slowest job rather than their sum. The standard is cosyte/config's
+  # documentation/decisions/0005-the-performance-standard.md.
+  #
+  # `scaling-gate` runs `pnpm test:perf`: the scaling gate in test/perf/scaling-gate.perf.ts and its
+  # self-check, never under coverage. No ruleset requires it yet; requiring it is a ruleset change,
+  # made once it has run on `main`.
+  scaling-gate:
+    runs-on: ubuntu-latest
+    # The gate times each phase for well under a second and its self-check about as long again; the
+    # bound is for an install and a suite that hang, inside the 15 minute budget for a pull request.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      # Node 22, the engine floor, as the `verify` context runs.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:perf
+
+  # `bench-compare` (pull requests only) builds the base beside the head and times both with
+  # `cosyte-bench compare`, interleaved on one runner: 12 rounds, each running every case once on
+  # each side in a fresh process, back to back, so the runner's noise lands on both. The head's
+  # suite is handed either build, so a case the head adds is timed on the base too. Only the sizes
+  # bench/dates.bench.mjs marks for comparison run here; the bench-reading workflow reads them all.
+  #
+  # IT IS ADVISORY AND NEVER FAILS: the tool's exit (1 a regression, 2 a case it could not measure)
+  # becomes an annotation on the run's page, never a red check, until an A/A calibration of this
+  # suite on this runner class shows false alarms under 1%. Never require it. The results document
+  # (results-v1, checked with `cosyte-bench check`) and its Markdown are kept in the
+  # `bench-comparison` artifact.
+  bench-compare:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    # The comparison stops itself at BENCH_BUDGET_SECONDS below and reports it; this bound is for an
+    # install or a build that hangs.
+    timeout-minutes: 15
+    steps:
+      # The whole history, so the base commit is on disk for a worktree beside the head.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+      # ONE STEP, AND IT ENDS 0 WHATEVER HAPPENS: a base that does not build or a spent budget ends
+      # it with a note, never a red check.
+      - name: Compare the base build with the head build
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BENCH_SUITE: bench/dates.bench.mjs
+          BENCH_TARGET: dist/index.js
+          BENCH_BUDGET_SECONDS: "600"
+        run: |
+          set -euo pipefail
+          out="${RUNNER_TEMP}/bench-comparison"
+          mkdir -p "${out}"
+          {
+            echo "### Base against head timing (advisory)"
+            echo
+            echo "This comparison does not fail the pull request. It becomes a required check only once an A/A calibration of this suite on this runner class shows false alarms under 1%."
+          } >> "${GITHUB_STEP_SUMMARY}"
+          stop() {
+            echo "::warning::bench-compare: $1; nothing was compared, and the pull request is not failed for it"
+            { echo; echo "Not run: $1."; } >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          }
+          if [ -z "${BASE_SHA}" ]; then stop "this run names no base commit"; fi
+          if ! pnpm install --frozen-lockfile || ! pnpm build; then stop "the head did not install or build"; fi
+          head_sha="$(git rev-parse HEAD)"
+          base_dir="${RUNNER_TEMP}/bench-base"
+          if ! git worktree add --quiet --detach "${base_dir}" "${BASE_SHA}"; then stop "the base commit ${BASE_SHA} could not be checked out"; fi
+          if ! (cd "${base_dir}" && pnpm install --frozen-lockfile && pnpm build); then stop "the base did not install or build"; fi
+          status=0
+          timeout --kill-after=10 "${BENCH_BUDGET_SECONDS}" pnpm exec cosyte-bench compare --suite "${BENCH_SUITE}" \
+            --base "${base_dir}/${BENCH_TARGET}" --head "${BENCH_TARGET}" \
+            --base-commit "${BASE_SHA}" --head-commit "${head_sha}" \
+            --out "${out}/dates.json" --summary "${out}/dates.md" || status=$?
+          case "${status}" in
+            0) ;;
+            1) echo "::warning::bench-compare: the head is slower than the base beyond the threshold in at least one case. Advisory: this does not fail the pull request" ;;
+            2) echo "::notice::bench-compare: could not measure every case (a skip, or a process that died), and a skip is not a pass" ;;
+            124 | 137) echo "::warning::bench-compare: stopped at the end of the ${BENCH_BUDGET_SECONDS} second budget" ;;
+            *) echo "::warning::bench-compare: cosyte-bench exited ${status}" ;;
+          esac
+          if [ -f "${out}/dates.md" ]; then
+            { echo; cat "${out}/dates.md"; } >> "${GITHUB_STEP_SUMMARY}"
+          else
+            { echo; echo "No results: cosyte-bench exited ${status}."; } >> "${GITHUB_STEP_SUMMARY}"
+          fi
+          if [ -f "${out}/dates.json" ] && ! pnpm exec cosyte-bench check "${out}/dates.json"; then
+            echo "::warning::bench-compare: ${out}/dates.json does not match the results schema"
+          fi
+          exit 0
+      # `!cancelled()` keeps whatever was written before a timeout or a failed setup step.
+      - name: Keep the comparison
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bench-comparison
+          path: ${{ runner.temp }}/bench-comparison/
+          if-no-files-found: warn
+          retention-days: 30
