@@ -60,7 +60,8 @@ pnpm add @cosyte/dates
 ```
 
 Node.js 22 or later, tested on 22, 24, and 26. ESM only: this package ships no
-CommonJS build, so `require()` will not load it.
+CommonJS build, so load it with `import`. A Node.js release that can `require()`
+an ES module loads it that way too, but we test only `import`.
 
 It carries exactly one runtime dependency, [`temporal-polyfill`][polyfill],
 because `Temporal.PlainDate` is the only widely available type that can hold a
@@ -92,12 +93,12 @@ const unknownZone = { year: 1988, month: 5, day: 7, hour: 13, minute: 45 };
 try {
   toInstant(unknownZone);
 } catch (error) {
-  console.log(error.name);
+  console.log(error instanceof Error ? error.name : error);
 }
 
 // A date that does not exist is refused, and says which rule it broke.
 const result = validateParts({ year: 2025, month: 2, day: 29 });
-console.log(result.valid ? "valid" : result.issues[0].message);
+console.log(result.valid ? "valid" : result.issues[0]?.message);
 ```
 
 ```text
