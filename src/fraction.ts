@@ -41,6 +41,7 @@ function fractionDigits(fraction: number): string | undefined {
   const exponential = EXPONENTIAL_DECIMAL.exec(text);
   if (exponential === null) return undefined;
 
+  /* v8 ignore next -- the first group of EXPONENTIAL_DECIMAL is not optional, so a match always captures it and the fallback only satisfies the type checker */
   const lead = exponential[1] ?? "";
   const rest = exponential[2] ?? "";
   const exponent = Number(exponential[3]);

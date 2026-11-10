@@ -53,10 +53,12 @@ function isLeapYear(year: number): boolean {
 
 function daysInMonth(year: number, month: number): number {
   if (month === 2) return isLeapYear(year) ? 29 : 28;
+  /* v8 ignore next -- only checkCalendarDate calls this, with a month already range-checked to 1 to 12, so the index is always in range */
   return MONTH_LENGTHS[month - 1] ?? 0;
 }
 
 function monthName(month: number): string {
+  /* v8 ignore next -- only checkCalendarDate calls this, with a month already range-checked to 1 to 12, so the index is always in range */
   return MONTH_NAMES[month - 1] ?? `month ${String(month)}`;
 }
 
