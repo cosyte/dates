@@ -34,11 +34,15 @@ const ONE_VALUE_INPUTS = 256;
  * The operations. `keep` says which values of the mix the operation accepts: `toTemporal` refuses
  * a year-only value and `toInstant` a value with no time of day, by design, so neither is handed one.
  * `batches` are the batch sizes, smallest first: a message's worth, a file's worth, and a feed's
- * worth that only a reading measures (`compare: false`), because a pull request's comparison runs
- * every case 24 times in fresh processes and its budget is 600 seconds.
+ * worth.
  *
- * `toInstant` is the slowest call by two orders of magnitude (see the profile), so its sizes are
- * smaller: a call over 2,048 values takes about as long as `toISO` over 65,536.
+ * A pull request's comparison runs only the four "one value" cases: it runs every case 24 times in
+ * fresh processes within a 600 second budget, and on a developer machine a round of eight cases took
+ * about 50 seconds, so twelve rounds would not fit. A batch is the same calls in a loop, so the
+ * one-value cases see what a batch would; a reading measures every size.
+ *
+ * `toInstant` is the slowest call, more than 20 times `toISO` a value on a GitHub-hosted runner, so
+ * its sizes are smaller: a call over 2,048 values took 57 ms there, and `toISO` over 65,536 92 ms.
  */
 const OPERATIONS = [
   {
@@ -100,10 +104,9 @@ for (const op of OPERATIONS) {
     }),
     defineBenchmark({
       name: `${op.name}: batch`,
-      sizes: op.batches.map((count, index) => ({
+      sizes: op.batches.map((count) => ({
         label: label(count),
-        // Only the smallest batch is compared on a pull request; a reading measures every size.
-        compare: index === 0,
+        compare: false,
         build: () => {
           // Two batches, so a pass is not one list repeated, from different starts in the mix.
           const inputs = [inputsFor(op, 0, count), inputsFor(op, count * 7 + 3, count)];

@@ -21,9 +21,6 @@ on:
       - "pnpm-lock.yaml"
       - ".github/workflows/bench-reading.yml"
   workflow_dispatch:
-  # Temporary, for the first reading before this file is on the default branch; removed before review.
-  push:
-    branches: [perf/benchmark-audit]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,8 +32,9 @@ permissions:
 jobs:
   reading:
     runs-on: ubuntu-latest
-    # The bound is for a case that hangs; a whole reading takes a fraction of it.
-    timeout-minutes: 60
+    # The whole job, a reading of its 18 cases and the profile, took about 4 minutes on a 4-CPU
+    # GitHub-hosted runner; the bound is for a case that hangs.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
