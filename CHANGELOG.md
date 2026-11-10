@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.5
+
+### Patch Changes
+
+- b598d53: No behavior changes: we mark each line no input can reach with a coverage exception that names its reason, so the test suite can hold every coverage metric at 100.
+
+  The converters now read the date components a validated value is known to carry through one internal helper, which returns exactly what the inline reads did.
+
+- 5deee76: The type declarations now describe the fields of each validation result and of `DatePartsError`.
+
+  `ValidationIssue.code`, `DatePartsError.issues`, and the `valid`, `parts`, `precision` and `issues`
+  fields of the two result types now carry doc comments, which an editor shows on hover, and three
+  existing comments use US spelling. No behavior changes.
+
 ## 0.1.4
 
 ### Patch Changes
