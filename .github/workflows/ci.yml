@@ -92,7 +92,11 @@ jobs:
 
       # The typed-exports gate the release pipeline runs before it publishes, run on every pull
       # request as well, so a change that breaks how the types resolve is red before it merges.
+      # Not on Windows: `cosyte-attw` starts `npm`, `pnpm` and `attw` by name with no shell, and
+      # Windows cannot start their `.cmd` launchers that way (it failed there on every Node line).
+      # What it checks is the packed manifest and its types, the same bytes on every system.
       - name: Types resolve (attw)
+        if: ${{ runner.os != 'Windows' }}
         run: pnpm run attw
 
       # The programs under examples/ import the package by its name, which resolves through the
