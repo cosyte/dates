@@ -588,3 +588,55 @@ describe("an offset option read again after it was checked", () => {
     expect(toInstant(local, changing(60)).toString()).toBe("2026-03-09T07:05:00Z");
   });
 });
+
+describe("a fixed offset, computed without Temporal's own placement", () => {
+  it("lands on the instant Temporal places the same local time at, across the whole range", () => {
+    const differing: string[] = [];
+    let state = 7;
+    const next = (bound: number): number => {
+      state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+      return state % bound;
+    };
+    const days = [1, 28, 29, 30, 31];
+    for (let i = 0; i < 4_000; i += 1) {
+      const year = i < 400 ? 1_000 + i * 22 : 1_000 + next(9_000);
+      const month = 1 + (i % 12);
+      const day = Math.min(
+        days[i % days.length] as number,
+        new Date(Date.UTC(2000, month, 0)).getUTCDate(),
+      );
+      if (month === 2 && day === 29 && !(year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)))
+        continue;
+      const parts = {
+        year,
+        month,
+        day,
+        hour: next(24),
+        minute: next(60),
+        second: next(60),
+        fraction: next(1_000_000_000) / 1e9,
+        offsetMinutes: next(2_879) - 1_439,
+      };
+      const nanoseconds = Math.round(parts.fraction * 1e9);
+      const offset = Math.abs(parts.offsetMinutes);
+      const zone = `${parts.offsetMinutes < 0 ? "-" : "+"}${String(Math.trunc(offset / 60)).padStart(2, "0")}:${String(offset % 60).padStart(2, "0")}`;
+      const expected = new Temporal.PlainDateTime(
+        year,
+        month,
+        day,
+        parts.hour,
+        parts.minute,
+        parts.second,
+        Math.floor(nanoseconds / 1e6),
+        Math.floor((nanoseconds % 1e6) / 1e3),
+        nanoseconds % 1e3,
+      ).toZonedDateTime(zone);
+      if (toInstant(parts).epochNanoseconds !== expected.epochNanoseconds) {
+        differing.push(JSON.stringify(parts));
+      }
+      if (!toZonedDateTime(parts).equals(expected))
+        differing.push(`zoned ${JSON.stringify(parts)}`);
+    }
+    expect(differing).toEqual([]);
+  });
+});
