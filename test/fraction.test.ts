@@ -113,3 +113,69 @@ describe("readFraction, a fraction that is not a share of one second", () => {
     expect(result.issue.message).toContain("0 <= fraction < 1");
   });
 });
+
+/**
+ * The reading this package shipped before it scanned characters: the same digits, matched by
+ * regular expressions. The scan must agree with it on every number.
+ */
+function referenceNanoseconds(fraction: number): number | undefined {
+  const text = String(fraction);
+  const plain = /^0(?:\.(\d+))?$/.exec(text);
+  let digits: string | undefined;
+  if (plain !== null) {
+    digits = plain[1] ?? "";
+  } else {
+    const exponential = /^(\d)(?:\.(\d+))?e-(\d+)$/.exec(text);
+    if (exponential === null) return undefined;
+    digits =
+      "0".repeat(Number(exponential[3]) - 1) + (exponential[1] ?? "") + (exponential[2] ?? "");
+  }
+  if (digits.length > 9) return undefined;
+  return digits === "" ? 0 : Number(digits.padEnd(9, "0"));
+}
+
+describe("nanosecondsOf, the character scan reads what the regular expressions read", () => {
+  it("agrees on every spelling a number can have", () => {
+    const probes = [
+      0,
+      -0,
+      1,
+      1.5,
+      123,
+      123.456,
+      -0.5,
+      1e21,
+      1.5e21,
+      1e-7,
+      1.5e-7,
+      9.99e-7,
+      1e-9,
+      5e-9,
+      1.5e-9,
+      2.5e-10,
+      5e-324,
+      Number.EPSILON,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+      0.1 + 0.2,
+      1 / 3,
+    ];
+    // A fixed sequence of doubles in [0, 1): whole nanoseconds, finer decimals, and raw bits.
+    let state = 12_345;
+    const next = (): number => {
+      state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+      return state;
+    };
+    for (let i = 0; i < 20_000; i += 1) {
+      probes.push((next() % 1_000_000_000) / 1e9);
+      probes.push((next() % 10_000_000_000) / 1e10);
+      probes.push(next() / 2 ** 32);
+      probes.push((next() % 1000) * 10 ** -(next() % 12));
+    }
+    const differing = probes.filter(
+      (fraction) => !Object.is(nanosecondsOf(fraction), referenceNanoseconds(fraction)),
+    );
+    expect(differing).toEqual([]);
+  });
+});
