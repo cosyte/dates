@@ -425,3 +425,33 @@ describe("isValidParts and assertValidParts agree with validateParts", () => {
     expect((thrown as DatePartsError).issues).toEqual(issuesOf(value));
   });
 });
+
+describe("validateParts, the parts it returns", () => {
+  it("carries every component of a full value, offset last, in the contract's order", () => {
+    const value = {
+      offsetMinutes: -300,
+      fraction: 0.25,
+      second: 7,
+      minute: 5,
+      hour: 8,
+      day: 9,
+      month: 3,
+      year: 2026,
+    };
+    const result = validateParts(value);
+    expect(result.valid).toBe(true);
+    if (!result.valid) return;
+    expect(Object.keys(result.parts)).toEqual([
+      "year",
+      "month",
+      "day",
+      "hour",
+      "minute",
+      "second",
+      "fraction",
+      "offsetMinutes",
+    ]);
+    expect(result.parts).toEqual(value);
+    expect(result.parts).not.toBe(value);
+  });
+});

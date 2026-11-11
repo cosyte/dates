@@ -565,3 +565,26 @@ describe("a conversion refuses what validation refuses, with the same diagnostic
     expect(() => toISO(value)).toThrow(result.issues[0]?.message ?? "unreachable");
   });
 });
+
+describe("an offset option read again after it was checked", () => {
+  /** Options whose `offsetMinutes` answers -300 when checked, then `late` when read to be used. */
+  function changing(late: number): ZoneOptions {
+    let reads = 0;
+    return {
+      get offsetMinutes() {
+        reads += 1;
+        return reads < 3 ? -300 : late;
+      },
+    };
+  }
+  const local = { year: 2026, month: 3, day: 9, hour: 8, minute: 5 };
+
+  it.each([1.5, -90.5])("uses the later answer %d as written, which Temporal refuses", (late) => {
+    expect(() => toInstant(local, changing(late))).toThrow(RangeError);
+    expect(() => toInstant(local, changing(late))).not.toThrow("offsetMinutes must be");
+  });
+
+  it("uses a later answer that is itself a usable offset", () => {
+    expect(toInstant(local, changing(60)).toString()).toBe("2026-03-09T07:05:00Z");
+  });
+});
