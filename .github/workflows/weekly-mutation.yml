@@ -31,4 +31,6 @@ jobs:
       mutate-cmd: "pnpm mutate:full"
       # Five source files are mutated, so four shards keep every shard busy; a file is in exactly
       # one shard, by the hash of its path.
-      shard-count: 4
+      # Temporary: 3 shards for one run on this pull request, so no earlier incremental result is
+      # reused and the score is measured fresh with the wider timeouts.
+      shard-count: 3
