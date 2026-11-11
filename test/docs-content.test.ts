@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
@@ -34,11 +35,11 @@ const docsDir = join(root, "docs-content");
 const apiDir = join(docsDir, "api");
 
 /**
- * The built entry point with forward slashes: the runner writes it into a sample's `from "..."`,
- * where a Windows backslash would be read as an escape. Unchanged on Linux and macOS.
+ * The built entry point as a `file:` URL: the runner writes it into a sample's `from "..."`, and
+ * Node's ESM loader on Windows refuses a bare absolute path (`C:\...` reads as a URL scheme).
  */
 const resolve = (specifier: string): string | undefined =>
-  specifier === "@cosyte/dates" ? distEntry.replaceAll("\\", "/") : undefined;
+  specifier === "@cosyte/dates" ? pathToFileURL(distEntry).href : undefined;
 
 /** The hand-written pages: every `.md` file at the top of `docs-content/`, not the generated `api/`. */
 const pages = readdirSync(docsDir)
