@@ -9,6 +9,12 @@
  * `test/support/capture-output-digests.ts` captures it from a base ref with `git archive`; re-run at
  * the same base, the file comes back byte-identical.
  *
+ * The digests were captured over `temporal-polyfill`'s own implementation. A runtime that ships
+ * Temporal (Node 26.13 on CI does) makes the polyfill hand over to it, and a returned object's
+ * record then describes the runtime's objects, not the polyfill's, for the base tree and head
+ * alike. The comparison runs where the polyfill is in use, on Node 22 and 24 in CI, and is skipped,
+ * saying so, where it is not.
+ *
  * It exists for changes that make validation or conversion cheaper and are meant to change nothing
  * else. A change that does mean to change an output re-captures the digests at the ref that ships
  * it, and says so.
@@ -30,7 +36,10 @@ const captured = JSON.parse(
   readFileSync(new URL("./__data__/output-digests.json", import.meta.url), "utf8"),
 ) as CapturedFile;
 
-describe("output equivalence with the base tree", () => {
+/** Whether the runtime has its own Temporal, which the polyfill then hands over to. */
+const nativeTemporal = typeof (globalThis as { Temporal?: unknown }).Temporal !== "undefined";
+
+describe.skipIf(nativeTemporal)("output equivalence with the base tree", () => {
   const corpus = outputCorpus();
 
   it("covers the same cases the base digests were captured over", () => {

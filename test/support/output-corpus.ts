@@ -101,6 +101,10 @@ const ZONE_OPTIONS: readonly OptionsCase[] = [
     options: () => changing("offsetMinutes", [-300, -300, 1.5]),
   },
   {
+    name: "offset changes sign on its third read",
+    options: () => changing("offsetMinutes", [-300, -300, -90.5]),
+  },
+  {
     name: "offset changes on its second read",
     options: () => changing("offsetMinutes", [-300, 1.5, -300]),
   },
