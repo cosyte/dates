@@ -2,3 +2,7 @@
 # comments in src/. Its --check compares the committed pages with what it writes, byte for byte, so
 # formatting them would make that check fail.
 docs-content/api/
+
+# Mutation testing (StrykerJS): the reports and the sandbox it runs in
+reports/
+.stryker-tmp/

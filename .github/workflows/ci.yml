@@ -2,17 +2,18 @@ name: CI
 
 # The gate for this repository, from the commit that gave it a package.
 #
-# ONE GATE JOB, RUN ON EACH SUPPORTED NODE LINE. Every rung runs inside `verify`, on Node 22 (the
-# floor `engines` declares), 24 and 26: the lines every @cosyte/* library tests (ST15). Beside it,
-# `actionlint` lints the workflow files once, as the shared CI's job of that name does in every
-# other library (see the note on that job below).
+# ONE GATE JOB, RUN ON EACH SUPPORTED NODE LINE AND SYSTEM. Every rung runs inside `verify`, on
+# Node 22 (the floor `engines` declares), 24 and 26, the lines every @cosyte/* library tests, each
+# on Linux, Windows and macOS. Beside it, `actionlint` lints the workflow files once, as the shared
+# CI's job of that name does in every other library (see the note on that job below).
 #
-# THE NODE 22 LEG KEEPS THE CONTEXT NAME `verify`, AND THAT IS LOAD-BEARING. The branch ruleset
-# requires a check named exactly `verify`, and a matrix job is otherwise reported as `verify (22)`,
-# which would leave every pull request waiting for a context nothing emits. So the job name is an
-# expression: the Node 22 leg is `verify`, the others `verify (node 24)` and `verify (node 26)`.
-# Only `verify` is required today; requiring the others is a ruleset change, made once each has
-# run on `main`.
+# THE LINUX NODE 22 LEG KEEPS THE CONTEXT NAME `verify`, AND THAT IS LOAD-BEARING. The branch
+# ruleset requires a check named exactly `verify`, and a matrix job is otherwise reported as
+# `verify (22, ubuntu-latest)`, which would leave every pull request waiting for a context nothing
+# emits. So the job name is an expression: the Linux Node 22 leg is `verify`, the other Linux legs
+# `verify (node 24)` and `verify (node 26)`, and the Windows and macOS legs
+# `verify (windows-latest, node 22)` and so on. Requiring the Windows and macOS legs is a ruleset
+# change, made once each has run on `main`.
 #
 # REPO-LOCAL, NOT THE ORG REUSABLE, for two reasons that still hold:
 #
@@ -23,7 +24,10 @@ name: CI
 #      by decision, ships no CommonJS build, and would be red on arrival for a
 #      reason no change here should fix.
 #
-# So this job runs Node 26 itself rather than taking it from the shared CI's matrix.
+# So the testing standard's jobs the shared CI runs behind its inputs (the `os` list of systems,
+# `run-bun`, `run-deno`, `run-coverage-ratchet` and `run-mutation`) run here as jobs of this
+# workflow, with the shared jobs' steps, as `scaling-gate` and `bench-compare` already did. The
+# standard is cosyte/config's documentation/decisions/0004-the-testing-standard.md.
 #
 # The dash gate ALSO has its own workflow (`no-emdash.yml`), and the overlap
 # is on purpose. That one runs on the `edited` activity type so it re-checks a
@@ -51,13 +55,20 @@ permissions:
 jobs:
   verify:
     # The required context: see the note above before changing this line or the matrix.
-    name: ${{ matrix.node == 22 && 'verify' || format('verify (node {0})', matrix.node) }}
+    name: ${{ matrix.os == 'ubuntu-latest' && (matrix.node == 22 && 'verify' || format('verify (node {0})', matrix.node)) || format('verify ({0}, node {1})', matrix.os, matrix.node) }}
     strategy:
       fail-fast: false
       matrix:
         node: [22, 24, 26]
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    # About four times the slowest leg's expected time, for a Windows runner's slower install and
+    # child processes.
+    timeout-minutes: 30
+    # Bash on every system, so each step means the same thing on Windows as on Linux.
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -81,7 +92,11 @@ jobs:
 
       # The typed-exports gate the release pipeline runs before it publishes, run on every pull
       # request as well, so a change that breaks how the types resolve is red before it merges.
+      # Not on Windows: `cosyte-attw` starts `npm`, `pnpm` and `attw` by name with no shell, and
+      # Windows cannot start their `.cmd` launchers that way (it failed there on every Node line).
+      # What it checks is the packed manifest and its types, the same bytes on every system.
       - name: Types resolve (attw)
+        if: ${{ runner.os != 'Windows' }}
         run: pnpm run attw
 
       # The programs under examples/ import the package by its name, which resolves through the
@@ -99,48 +114,245 @@ jobs:
       - name: Format check
         run: pnpm run format:check
 
-      # The shared PHI scan (`cosyte-phi-scan` from @cosyte/script-utils, ST34): the cross-cutting
-      # floor over the whole repository. The values this package handles are dates of birth and
-      # admission times, so a fixture or an example must never carry a real one.
+      # The shared PHI scan (`cosyte-phi-scan` from @cosyte/script-utils): the cross-cutting floor
+      # over the whole repository. The values this package handles are dates of birth and admission
+      # times, so a fixture or an example must never carry a real one. It reads the committed bytes,
+      # which are the same on every system, so it runs on the Linux legs.
       - name: PHI scan
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: pnpm run phi-scan
 
       - name: Test
         run: pnpm run test
 
-      # The shared 90% coverage gate from @cosyte/vitest-config, over `src/`.
+      # The 100% coverage gate from vitest.config.ts, over `src/`.
       - name: Test coverage
         run: pnpm run test:coverage
 
       # The package promises the host time zone changes nothing. A suite that
       # only ever runs under the runner's zone cannot notice a regression that
       # reintroduces a host-zone dependency, so it runs again from the other side
-      # of the world.
+      # of the world. `pnpm run test:tz` sets `TZ` in POSIX shell syntax, which the Windows
+      # command shell pnpm runs scripts with does not read, so on Windows this step sets it
+      # from bash for each of the same two runs.
       - name: Test under two host time zones
+        if: ${{ runner.os != 'Windows' }}
         run: pnpm run test:tz
 
+      - name: Test under two host time zones (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        run: |
+          TZ=UTC pnpm run test
+          TZ=Pacific/Kiritimati pnpm run test
+
+      # The checks below read the repository's own files, which are the same bytes on every
+      # system, so they run on the Linux legs.
+      #
       # The shared em and en dash gate (`cosyte-no-emdash`), over every tracked file and file name.
       - name: Em and en dash gate
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: pnpm run check:no-emdash
 
       # The house checks on this repository's documents and its catalog entry, all from
-      # @cosyte/script-utils (RD1, RD2, PF1). Steps of this job, so they gate a merge.
+      # @cosyte/script-utils. Steps of this job, so they gate a merge.
       - name: The README follows the house skeleton
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: pnpm run check:readme
 
       - name: The CLAUDE.md card follows its spec
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: pnpm run check:claude-card
 
       - name: The package description is the catalog's
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: pnpm run check:catalog
 
       # The process wiring (`cosyte-process check` from @cosyte/process): the script bodies delegate
       # to `cosyte-process`, `cosyte-process.config.json` is valid, and the direct `vitest` is
       # exactly the version process runs.
       - name: The process wiring is the shared one
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: pnpm run check:process
 
-  # Workflow linting, as every other @cosyte/* library has it (EN6): the shared CI's `actionlint`
+  # THE TEST SUITE UNDER BUN AND UNDER DENO, the steps of the shared CI's `bun` and `deno` jobs (its
+  # `run-bun` and `run-deno` inputs). Each installs with pnpm from the committed lockfile, as
+  # `verify` does, then runs this repository's `test` script on the other runtime: Bun with
+  # `bun --bun run test`, so every `node` a script starts is Bun; Deno with `deno task test`, with
+  # Node taken off PATH so nothing falls back to it. Under Deno the cases that read the build are
+  # skipped by name (test/support/runtime.ts says why). Neither is required yet; requiring them is
+  # a ruleset change, made once each has run on `main`.
+  bun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+      # The Bun version the shared CI's `bun-version` input defaults to.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.4.4"
+      - run: pnpm install --frozen-lockfile
+      - name: The test suite under Bun
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "bun: $(bun --version)"
+          bun --bun run test
+
+  deno:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+      # The Deno version the shared CI's `deno-version` input defaults to.
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: "2.9.8"
+      - run: pnpm install --frozen-lockfile
+      # Deno's task runner runs a script's literal `node` with the real Node whenever one is on
+      # PATH, so every PATH entry that holds a `node` is replaced by a mirror of it without one, and
+      # the step refuses to run the suite if a `node` is still reachable.
+      - name: The test suite under Deno
+        shell: bash
+        run: |
+          set -euo pipefail
+          shadow="${RUNNER_TEMP}/path-without-node"
+          rm -rf "${shadow}"
+          kept=()
+          count=0
+          IFS=':' read -r -a entries <<< "${PATH}"
+          for entry in "${entries[@]}"; do
+            if [ -n "${entry}" ] && [ -e "${entry}/node" ]; then
+              count=$((count + 1))
+              mirror="${shadow}/${count}"
+              mkdir -p "${mirror}"
+              for tool in "${entry}"/*; do
+                if [ "${tool##*/}" != node ]; then ln -s "${tool}" "${mirror}/"; fi
+              done
+              echo "deno: ${entry} holds a node, so PATH names ${mirror} in its place, with everything else in it"
+              entry="${mirror}"
+            fi
+            kept+=("${entry}")
+          done
+          PATH="$(IFS=':'; echo "${kept[*]}")"
+          if found="$(command -v node)"; then
+            echo "::error::a node is still on PATH at ${found}, so the suite would run under Node rather than Deno"
+            exit 1
+          fi
+          echo "deno: $(deno --version | head -n 1)"
+          deno task test
+
+  # THE TESTING STANDARD'S TWO PULL REQUEST JOBS, the steps of the shared CI's `coverage-ratchet`
+  # and `mutation` jobs. Both run beside `verify`, never after it, so a pull request waits for the
+  # slowest job rather than their sum.
+  #
+  # `coverage-ratchet` runs `pnpm test:coverage` and holds coverage to quality-floor.json with
+  # `cosyte-ratchet` (@cosyte/script-utils): on a pull request against the base branch too, so every
+  # changed line coverage counts must have run and no floor may be lowered or removed; on any other
+  # event against the floor file alone.
+  coverage-ratchet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # The whole history, so the merge base is on disk for the changed lines.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:coverage
+      - name: The coverage ratchet
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          args=(check --skip mutation)
+          if [ -n "${BASE_REF}" ]; then args+=(--base "origin/${BASE_REF}"); fi
+          report="${RUNNER_TEMP}/coverage-ratchet.txt"
+          status=0
+          pnpm exec cosyte-ratchet "${args[@]}" > "${report}" 2>&1 || status=$?
+          cat "${report}"
+          {
+            echo "### Coverage against the floor"
+            echo
+            echo '```text'
+            cat "${report}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+          exit "${status}"
+
+  # `mutation` (pull requests only) mutates the source files the change touched with
+  # stryker.config.mjs (`cosyte-mutate changed`, @cosyte/vitest-config) and requires every mutant in
+  # the changed lines to be killed. A change with no changed source file starts no run and passes.
+  mutation:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Mutate the changed files
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          pnpm exec cosyte-mutate changed --base "origin/${BASE_REF}"
+      - name: The mutation ratchet over the changed code
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          report="${RUNNER_TEMP}/mutation-ratchet.txt"
+          status=0
+          pnpm exec cosyte-ratchet check --skip coverage --base "origin/${BASE_REF}" > "${report}" 2>&1 || status=$?
+          cat "${report}"
+          {
+            echo "### Mutants in the changed code"
+            echo
+            echo '```text'
+            cat "${report}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+          exit "${status}"
+      - name: Keep the mutation report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-changed
+          path: reports/mutation/
+          if-no-files-found: warn
+          retention-days: 14
+
+  # Workflow linting, as every other @cosyte/* library has it: the shared CI's `actionlint`
   # job, whose steps run here because this repository does not call the shared CI (see the note at
   # the top). rhysd/actionlint's release binary is downloaded at the version below and checked
   # against the SHA-256 below before it is unpacked, so a changed asset fails the job; the pair is
@@ -151,7 +363,7 @@ jobs:
   # skips its shell checks without it, so the install step refuses to continue when it is missing.
   #
   # A job of its own rather than a rung of `verify`: it needs no Node and no install, and inside the
-  # matrix it would lint the same files three times. Its context is `actionlint`, which no ruleset
+  # matrix it would lint the same files nine times. Its context is `actionlint`, which no ruleset
   # requires yet; requiring it is a ruleset change, made once it has run on `main`.
   actionlint:
     runs-on: ubuntu-latest
