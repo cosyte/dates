@@ -7,6 +7,7 @@
       "src/**/*.ts",
       "test/**/*.ts",
       "scripts/**/*.{ts,mjs}",
+      "bench/**/*.{mjs,mts}",
       "examples/**/*.{ts,md}",
       "docs-content/**/*.{md,json}",
       "*.{ts,json,md,yml}"

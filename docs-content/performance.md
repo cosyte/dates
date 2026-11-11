@@ -16,10 +16,27 @@ The numbers for the current release are in [Current numbers](#current-numbers) b
 
 ## What we measure
 
-We do not run benchmarks on `@cosyte/dates` yet, and no CI job guards its speed. The performance
-standard names what a benchmark measures: throughput, latency at the 50th, 95th, and 99th
-percentiles, peak memory, import time, and bundle size. For this package, each of those reads "not
-measured" in the section below until a benchmark runs on it.
+The benchmark suite is `bench/dates.bench.mjs` in the repository. It measures `validateParts`,
+`toISO`, `toTemporal` and `toInstant` two ways: one value per call, as a parser converts one field,
+and a batch per call, of up to 65,536 values in the mix HL7 v2, FHIR and X12 carry (dates of birth,
+partial dates, event times with and without an offset, sub-second times). Every value is synthetic
+and built in code. For each case it reads throughput, latency at the 50th, 95th, and 99th
+percentiles, allocations per call, peak heap, and whether the heap stays flat over a long run. It
+also reads the cold import time and the gzipped size of every file the import loads.
+
+Two CI jobs guard speed on a pull request. The scaling gate (`pnpm test:perf`) fails when the cost
+of converting a batch grows faster than the batch. A base against head comparison times the pull
+request's build against `main`'s on one runner and posts its numbers without failing. A full
+reading, with the budgets and a CPU and heap profile, runs on a GitHub-hosted runner on a pull
+request that changes the source or the bench, and by hand.
+
+To take a reading on your own machine, from a clone, after `pnpm build`:
+
+```sh
+pnpm bench:reading --out bench-results/reading.json --summary bench-results/reading.md
+pnpm bench:budgets bench-results/reading.json
+pnpm bench:profile
+```
 
 ## What each call does
 

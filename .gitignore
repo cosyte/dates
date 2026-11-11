@@ -5,3 +5,4 @@ coverage/
 *.tsbuildinfo
 dist-artifacts/
 .cosyte-doc-snippets/
+bench-results/

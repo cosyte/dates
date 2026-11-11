@@ -10,5 +10,13 @@
       "@cosyte/dates": ["./src/index.ts"]
     }
   },
-  "include": ["src", "test", "examples", "scripts/**/*.ts", "tsup.config.ts", "vitest.config.ts"]
+  "include": [
+    "src",
+    "test",
+    "examples",
+    "scripts/**/*.ts",
+    "tsup.config.ts",
+    "vitest.config.ts",
+    "vitest.perf.config.ts"
+  ]
 }
