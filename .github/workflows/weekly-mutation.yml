@@ -9,9 +9,6 @@ name: Weekly mutation
 # documentation/decisions/0004-the-testing-standard.md.
 
 on:
-  # Temporary: one run on this pull request measures the score the floor records, then it goes.
-  pull_request:
-    branches: [main]
   schedule:
     # Sunday 06:43 UTC. An odd minute: GitHub delays scheduled runs at the start of every hour.
     - cron: "43 6 * * 0"
