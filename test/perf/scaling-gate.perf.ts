@@ -64,9 +64,12 @@ const options: ScalingGateOptions<Batch, string[]> = {
   // A batch of one value of each shape, as a message carries them: its length does not depend on
   // the index. Each base phase must last at least 4 ms (MIN_PHASE_MS) on the fastest runner: on a
   // 4-CPU GitHub-hosted runner 250 batches took 3.3 ms and 5 inputs of 1,000 values 3.9 ms, and the
-  // gate skipped, so both are three times and twice that here.
-  count: { n: 750, generate: (i) => values(i * SHAPE_COUNT, SHAPE_COUNT) },
-  size: { inputs: 10, size: 1_000, generate: (i, size) => values(i * size * 4, size) },
+  // gate skipped. Validation and toISO now allocate almost nothing per value and run several times
+  // faster than they did then, so both axes are three times the sizes that last measured 15.8 ms
+  // and 12.9 ms. More inputs on the size axis also widen the self-check's margin: the quadratic
+  // reference's cost per input is unchanged while the clean conversion beside it shrank.
+  count: { n: 2_250, generate: (i) => values(i * SHAPE_COUNT, SHAPE_COUNT) },
+  size: { inputs: 30, size: 1_000, generate: (i, size) => values(i * size * 4, size) },
 };
 
 describe("the scaling gate: toISO over a batch", () => {
