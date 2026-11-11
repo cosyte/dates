@@ -6,6 +6,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { distEntry, packageRoot } from "./support/paths.js";
 import { oneLineDescription, readReadme, section } from "./support/readme.js";
 import { runBuiltPackageScript } from "./support/run.js";
+import { READS_BUILD } from "./support/runtime.js";
 
 interface Manifest {
   readonly name?: string;
@@ -81,8 +82,9 @@ describe("the runtime dependency ceiling", () => {
 });
 
 // Criterion: any public entry point exercised with a date value writes nothing to
-// stdout, stderr or disk, so a PHI-bearing value never leaves the process here.
-describe("the package writes nothing", () => {
+// stdout, stderr or disk, so a PHI-bearing value never leaves the process here. Both cases read the
+// build, so they are skipped under Deno, where there is none (see `support/runtime.ts`).
+describe.skipIf(!READS_BUILD)("the package writes nothing", () => {
   const workingDirectory = mkdtempSync(path.join(os.tmpdir(), "cosyte-dates-no-write-"));
 
   afterAll(() => {

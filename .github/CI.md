@@ -14,7 +14,9 @@ no gate: it blocks the very pull requests that would fix it.
 
 | workflow | trigger | what it is |
 |---|---|---|
-| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22, 24 and 26: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the PHI scan (`pnpm run phi-scan`), the test suite, the 90% coverage gate (`pnpm run test:coverage`), the suite again under a second host time zone, the em and en dash gate, the README, CLAUDE.md card and catalog checks, and the process wiring check (`pnpm run check:process`). The PHI scan, the dash gate and the three document checks are the shared ones from `@cosyte/script-utils` (ST34). Build, typecheck, lint, format and test run through `cosyte-process` from `@cosyte/process`, which owns the tool versions; `cosyte-process check` fails the job when a script body or the direct `vitest` pin drifts from it. A second job, `actionlint`, lints every workflow file with rhysd/actionlint's release binary, at the version and SHA-256 the shared CI pins (EN6). |
+| `.github/workflows/ci.yml` | push to `main`, pull request to `main`, nightly cron (05:49 UTC), manual dispatch | The gate. One job, `verify`, run on Node 22, 24 and 26, each on Linux, Windows and macOS: install from the frozen lockfile, build, the typed-exports check (`pnpm run attw`), the runnable examples (`pnpm run examples`), typecheck, lint, format check, the test suite, the 100% coverage gate (`pnpm run test:coverage`), and the suite again under two host time zones; on the Linux legs also the PHI scan (`pnpm run phi-scan`), the em and en dash gate, the README, CLAUDE.md card and catalog checks, and the process wiring check (`pnpm run check:process`), which read the same committed bytes on every system. Build, typecheck, lint, format and test run through `cosyte-process` from `@cosyte/process`, which owns the tool versions. Beside it: `actionlint` lints every workflow file with rhysd/actionlint's release binary at the version and SHA-256 the shared CI pins; `bun` and `deno` run the suite under Bun and under Deno; `coverage-ratchet` holds coverage to `quality-floor.json` with `cosyte-ratchet`, and on a pull request every changed line coverage counts; `mutation`, on a pull request only, mutates the changed source files with `stryker.config.mjs` and requires every mutant in the changed lines killed; `scaling-gate` runs `pnpm test:perf`; `bench-compare`, on a pull request only, is advisory and never fails. |
+| `.github/workflows/weekly-mutation.yml` | weekly cron (Sunday 06:43 UTC), manual dispatch | Thin caller of the org weekly mutation reusable: `pnpm mutate:full` split across four shards, the merged score held to the mutation floor in `quality-floor.json`, the report kept in the `mutation-report` artifact. It never commits; a floor is raised by a pull request. |
+| `.github/workflows/nightly-properties.yml` | nightly cron (04:29 UTC), manual dispatch | Thin caller of the org nightly properties reusable: `pnpm test:property` with `COSYTE_PROPERTY_RUNS=10000`, each failure's replay seed and path kept in the summary and the `property-run` artifact. |
 | `.github/workflows/no-emdash.yml` | push to `main`, pull request to `main` (including `edited`) | Two repo-local jobs running the shared gate (`pnpm check:no-emdash`, `cosyte-no-emdash`) for U+2014 and U+2013 in every encoded form. `no-emdash` scans every tracked file and file name; `no-emdash-messages`, on a pull request only, scans its title, body and commit messages. |
 | `.github/workflows/scorecard.yml` | push to `main`, weekly cron | Thin caller of the org Scorecard reusable at a published reference. Supply-chain analysis, SARIF into the Security tab. |
 | `.github/workflows/codeql.yml` | push to `main`, pull request to `main`, weekly cron | Thin caller of the org CodeQL reusable at a published reference. |
@@ -22,19 +24,23 @@ no gate: it blocks the very pull requests that would fix it.
 | `.github/workflows/pr-title.yml` | pull request to `main` (including `edited`) | Thin caller of the org pull request title check at a published reference: the title, which a squash merge makes the commit, follows Conventional Commits. Its context is `pr-title / conventional-commits`. |
 | `.github/workflows/release.yml` | push to `main` | Thin caller of the org release reusable at a published reference: Changesets opens or refreshes the "Version Packages" pull request, and merging that pull request publishes to npm behind the `release` environment. See "The release path" below. |
 
-Every caller of a `cosyte/.github` reusable names the same published reference,
-a `workflows-*` release (ST37), and they move to the next one together.
+Every caller of a `cosyte/.github` reusable names a published reference, a
+`workflows-*` release. The weekly mutation and nightly properties callers name a
+later one than the rest, because the earlier one holds neither workflow; moving
+the others to it is a change of its own, since its `release.yml` gates a publish
+on the weekly mutation result.
 
 `ci.yml`'s gate is ONE JOB, `verify`, run once per supported Node line: `22`, the
 engine floor the package declares, so the gate proves the floor rather than
 whatever the runner happens to ship, then `24` and `26`, the other lines every
-@cosyte/\* library tests (ST15). The Node 22 leg is still reported as `verify`;
-the others are reported as `verify (node 24)` and `verify (node 26)`. The ruleset
-requires all three (see the last section).
+@cosyte/\* library tests. The Linux Node 22 leg is still reported as `verify`;
+the other Linux legs as `verify (node 24)` and `verify (node 26)`, and the
+Windows and macOS legs as `verify (windows-latest, node 22)` and so on. The
+ruleset requires the three Linux legs (see the last section).
 
 Beside it, `ci.yml`'s `actionlint` job lints every tracked workflow file once, by
 the steps of the shared CI's `actionlint` job, which every other @cosyte/\*
-library runs as `ci / actionlint` (EN6). It downloads rhysd/actionlint's own
+library runs as `ci / actionlint`. It downloads rhysd/actionlint's own
 release binary at one version and checks it against one SHA-256 before unpacking
 it, so the pair moves with the shared job's, by hand: Dependabot cannot see it.
 Never reviewdog/action-actionlint, which from v1.75.0 installs actionlint by
@@ -112,6 +118,10 @@ Not adopted anyway, for two reasons that outlive the precondition.**
 2. Its ladder includes a dual ESM/CJS smoke import of the built entrypoint. This
    package is ESM only by decision and ships no CommonJS build, so that rung
    would be red for a reason no change here should fix.
+
+So the testing standard's jobs the reusable runs behind its inputs (`os`,
+`run-bun`, `run-deno`, `run-coverage-ratchet`, `run-mutation`) run in `ci.yml`
+as jobs of its own, with the reusable's steps.
 
 Adopting it later is a small change and nothing in `ci.yml` blocks it: delete the
 steps and the local `actionlint` job, add a `uses:`. If that happens, note that the

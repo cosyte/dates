@@ -10,6 +10,7 @@ import * as api from "../src/index.js";
 import { toISO, validateParts } from "../src/index.js";
 import { distEntry, packageRoot as root } from "./support/paths.js";
 import { fencedBlock, readReadme, section } from "./support/readme.js";
+import { READS_BUILD } from "./support/runtime.js";
 
 /**
  * The docs.cosyte.com pages in `docs-content/`, held to the code they describe.
@@ -32,8 +33,12 @@ import { fencedBlock, readReadme, section } from "./support/readme.js";
 const docsDir = join(root, "docs-content");
 const apiDir = join(docsDir, "api");
 
+/**
+ * The built entry point with forward slashes: the runner writes it into a sample's `from "..."`,
+ * where a Windows backslash would be read as an escape. Unchanged on Linux and macOS.
+ */
 const resolve = (specifier: string): string | undefined =>
-  specifier === "@cosyte/dates" ? distEntry : undefined;
+  specifier === "@cosyte/dates" ? distEntry.replaceAll("\\", "/") : undefined;
 
 /** The hand-written pages: every `.md` file at the top of `docs-content/`, not the generated `api/`. */
 const pages = readdirSync(docsDir)
@@ -55,7 +60,9 @@ const shortName = (path: string): string => path.slice(docsDir.length + 1);
  * can run, as the test below holds.
  */
 const suiteOptions = { files: pages, every: true, resolve };
-docSnippetSuite(suiteOptions);
+// The samples run against the build, so not under Deno, where there is none (see
+// `support/runtime.ts`); they still compile against the types below.
+if (READS_BUILD) docSnippetSuite(suiteOptions);
 
 /** One fenced block of a page: its language, the words after it, its body, and its line. */
 interface Fence {
@@ -154,9 +161,16 @@ function compileErrors(sources: ReadonlyMap<string, string>): string[] {
     });
 }
 
-/** Where a sample is compiled: a file that is never written, beside the tests. */
+/**
+ * Where a sample is compiled: a file that is never written, beside the tests. With forward
+ * slashes, as TypeScript names every file it asks the host for, so the map of sources is found on
+ * Windows too.
+ */
 const sampleFile = (pageName: string, line: number): string =>
-  join(root, "test", `.docs-sample-${pageName.replace(/\.md$/, "")}-${String(line)}.ts`);
+  join(root, "test", `.docs-sample-${pageName.replace(/\.md$/, "")}-${String(line)}.ts`).replaceAll(
+    "\\",
+    "/",
+  );
 
 describe("every sample on a hand-written page", () => {
   it("runs, or names in its fence why it cannot", () => {

@@ -17,6 +17,7 @@
     "scripts/**/*.ts",
     "tsup.config.ts",
     "vitest.config.ts",
+    "vitest.mutation.config.ts",
     "vitest.perf.config.ts"
   ]
 }

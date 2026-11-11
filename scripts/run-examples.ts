@@ -9,7 +9,9 @@
  *
  *     pnpm build && pnpm examples
  *
- * File names are passed to `spawnSync` as arguments, never through a shell.
+ * File names are passed to `spawnSync` as arguments, never through a shell. tsx runs from its own
+ * script with this Node, not through `node_modules/.bin`, whose shim Windows cannot start without a
+ * shell.
  */
 
 import { spawnSync } from "node:child_process";
@@ -20,7 +22,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const examplesDir = path.join(root, "examples");
-const tsx = path.join(root, "node_modules", ".bin", "tsx");
+const tsx = path.join(root, "node_modules", "tsx", "dist", "cli.mjs");
 
 const examples = readdirSync(examplesDir, { withFileTypes: true })
   .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
@@ -35,7 +37,7 @@ if (examples.length === 0) {
 let failed = 0;
 for (const file of examples) {
   const marker = `${path.basename(file, ".ts")}: ok`;
-  const result = spawnSync(tsx, [path.join("examples", file)], {
+  const result = spawnSync(process.execPath, [tsx, path.join("examples", file)], {
     cwd: root,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
