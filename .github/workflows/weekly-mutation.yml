@@ -9,9 +9,6 @@ name: Weekly mutation
 # documentation/decisions/0004-the-testing-standard.md.
 
 on:
-  # Temporary: one run on this pull request measures the score with the wider timeouts, then it goes.
-  pull_request:
-    branches: [main]
   schedule:
     # Sunday 06:43 UTC. An odd minute: GitHub delays scheduled runs at the start of every hour.
     - cron: "43 6 * * 0"
@@ -31,6 +28,4 @@ jobs:
       mutate-cmd: "pnpm mutate:full"
       # Five source files are mutated, so four shards keep every shard busy; a file is in exactly
       # one shard, by the hash of its path.
-      # Temporary: 3 shards for one run on this pull request, so no earlier incremental result is
-      # reused and the score is measured fresh with the wider timeouts.
-      shard-count: 3
+      shard-count: 4
