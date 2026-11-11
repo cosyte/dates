@@ -6,46 +6,89 @@ import {
   MissingZoneError,
   PrecisionError,
 } from "./errors.js";
-import { readFraction } from "./fraction.js";
 import { PRECISION_LADDER } from "./types.js";
-import type { DateParts, Precision, ZoneOptions } from "./types.js";
-import { validateParts } from "./validate.js";
+import type { Precision, ZoneOptions } from "./types.js";
+import { NANOSECONDS, OFFSET, held, inspectParts } from "./validate.js";
 
 /** The narrowest Temporal type that carries everything a value states, and nothing more. */
 export type TemporalValue =
   Temporal.PlainYearMonth | Temporal.PlainDate | Temporal.PlainDateTime | Temporal.ZonedDateTime;
 
+/** Where each component sits on the precision ladder, and so in `held`. */
+const YEAR = 0;
+const MONTH = 1;
+const DAY = 2;
+const HOUR = 3;
+const MINUTE = 4;
+const SECOND = 5;
+const FRACTION = 6;
+
+/**
+ * A validated value, read out of `held` into plain numbers.
+ *
+ * Every converter takes its components through this one function, straight after
+ * validation and before it runs anything else, so what it converts is exactly
+ * what was validated. A component below the value's precision reads as zero,
+ * which is what Temporal's own defaults would make it; it is never rendered or
+ * reported, because the precision says it is not there. `offsetMinutes` is
+ * `undefined` when the value states none.
+ */
 interface Checked {
-  readonly parts: DateParts;
-  readonly precision: Precision;
+  readonly depth: number;
+  readonly year: number;
+  readonly month: number;
+  readonly day: number;
+  readonly hour: number;
+  readonly minute: number;
+  readonly second: number;
+  readonly nanoseconds: number;
+  readonly offsetMinutes: number | undefined;
+}
+
+/** `held[index]`, or zero when the value's precision stops above it. */
+function component(depth: number, index: number): number {
+  return depth >= index ? (held[index] as number) : 0;
 }
 
 function check(value: unknown): Checked {
-  const result = validateParts(value);
-  if (!result.valid) throw new DatePartsError(result.issues);
-  return { parts: result.parts, precision: result.precision };
+  const depth = inspectParts(value);
+  if (typeof depth !== "number") throw new DatePartsError(depth);
+  const offset = held[OFFSET] as number;
+  return {
+    depth,
+    year: held[YEAR] as number,
+    month: component(depth, MONTH),
+    day: component(depth, DAY),
+    hour: component(depth, HOUR),
+    minute: component(depth, MINUTE),
+    second: component(depth, SECOND),
+    nanoseconds: depth === FRACTION ? (held[NANOSECONDS] as number) : 0,
+    offsetMinutes: Number.isNaN(offset) ? undefined : offset,
+  };
 }
 
-function atLeast(precision: Precision, floor: Precision): boolean {
-  return PRECISION_LADDER.indexOf(precision) >= PRECISION_LADDER.indexOf(floor);
+function precisionAt(depth: number): Precision {
+  return PRECISION_LADDER[depth] as Precision;
 }
 
-/**
- * A component the validated value carries.
- *
- * Every caller asks only for a component at or above the value's precision, and
- * `validateParts` admits a value only when its components run from year down to
- * its precision with no gap, so the component is always present here.
- */
-function stated(parts: DateParts, name: Exclude<Precision, "fraction">): number {
-  const held = parts[name];
-  /* v8 ignore next -- callers ask only for a component at or above the precision, and validateParts admits no gap from year down to it, so the component is always present and the fallback only satisfies the type checker */
-  return held ?? 0;
+/** The character code of the decimal digit `digit`. */
+function digit(value: number): number {
+  return 48 + value;
 }
 
-function pad(value: number, width: number): string {
-  return String(value).padStart(width, "0");
+/** The character codes of the two digits of `value`, 0 to 99, as `[tens, ones]`. */
+function tens(value: number): number {
+  return digit(Math.trunc(value / 10));
 }
+
+function ones(value: number): number {
+  return digit(value % 10);
+}
+
+const DASH = 45;
+const PLUS = 43;
+const COLON = 58;
+const LETTER_T = 84;
 
 /**
  * Signed minutes rendered as `+HH:MM` or `-HH:MM`.
@@ -55,47 +98,78 @@ function pad(value: number, width: number): string {
  * ABSENT offset renders nothing at all, because unknown is not UTC.
  */
 function formatOffset(offsetMinutes: number): string {
-  const sign = offsetMinutes < 0 ? "-" : "+";
   const absolute = Math.abs(offsetMinutes);
-  return `${sign}${pad(Math.trunc(absolute / 60), 2)}:${pad(absolute % 60, 2)}`;
+  const hours = Math.trunc(absolute / 60);
+  const minutes = absolute % 60;
+  return String.fromCharCode(
+    offsetMinutes < 0 ? DASH : PLUS,
+    tens(hours),
+    ones(hours),
+    COLON,
+    tens(minutes),
+    ones(minutes),
+  );
+}
+
+/** Sub-second digits after a `.`, trimmed of trailing zeros but never to nothing. */
+function formatFraction(nanoseconds: number): string {
+  if (nanoseconds === 0) return ".0";
+  let count = nanoseconds;
+  let width = 9;
+  while (count % 10 === 0) {
+    count /= 10;
+    width -= 1;
+  }
+  return `.${String(count).padStart(width, "0")}`;
 }
 
 /**
- * The whole nanoseconds a fraction denotes.
- *
- * Every converter reads a fraction through the SAME function the validator uses,
- * so a value the validator has just certified can never reach a converter that
- * disagrees with it. A fraction the reader refuses is refused here with the
- * validator's own diagnostic rather than by leaking whatever Temporal makes of
- * a nonsense field.
- *
- * @throws {DatePartsError} if the fraction is not a whole number of nanoseconds.
+ * The days from 1970-01-01 to a proleptic Gregorian date, by whole-number
+ * arithmetic on eras of 400 years (146,097 days each), so it is exact for every
+ * date the contract admits.
  */
-function nanosecondsOf(fraction: number): number {
-  const reading = readFraction(fraction);
-  /* v8 ignore next -- every converter passes a fraction validateParts has already read through this same readFraction and accepted, and the reading is a pure function of the number */
-  if (!reading.ok) throw new DatePartsError([reading.issue]);
-  return reading.nanoseconds;
+function daysFromEpoch(year: number, month: number, day: number): number {
+  const shifted = month <= 2 ? year - 1 : year;
+  const era = Math.floor(shifted / 400);
+  const yearOfEra = shifted - era * 400;
+  const dayOfYear = Math.floor((153 * (month > 2 ? month - 3 : month + 9) + 2) / 5) + day - 1;
+  const dayOfEra =
+    yearOfEra * 365 + Math.floor(yearOfEra / 4) - Math.floor(yearOfEra / 100) + dayOfYear;
+  return era * 146_097 + dayOfEra - 719_468;
 }
 
-/** Sub-second digits, trimmed of trailing zeros but never to nothing. */
-function formatFraction(fraction: number): string {
-  const digits = pad(nanosecondsOf(fraction), 9).replace(/0+$/, "");
-  return `.${digits === "" ? "0" : digits}`;
+/**
+ * The exact instant a local time denotes at a fixed offset, in epoch
+ * nanoseconds.
+ *
+ * At a fixed offset a local time maps to exactly one instant: there is no
+ * transition to skip or repeat it. The seconds stay well inside the range a
+ * double holds exactly (year 9999 is under 2.6e11 seconds), and the nanoseconds
+ * are joined to them as a bigint, so nothing is rounded.
+ */
+function epochNanosecondsAt(parts: Checked, offsetMinutes: number): bigint {
+  const seconds =
+    daysFromEpoch(parts.year, parts.month, parts.day) * 86_400 +
+    parts.hour * 3_600 +
+    parts.minute * 60 +
+    parts.second -
+    offsetMinutes * 60;
+  return BigInt(seconds) * 1_000_000_000n + BigInt(parts.nanoseconds);
 }
 
-function subSecondFields(fraction: number | undefined): {
-  millisecond?: number;
-  microsecond?: number;
-  nanosecond?: number;
-} {
-  if (fraction === undefined) return {};
-  const nanoseconds = nanosecondsOf(fraction);
-  return {
-    millisecond: Math.floor(nanoseconds / 1e6),
-    microsecond: Math.floor((nanoseconds % 1e6) / 1e3),
-    nanosecond: nanoseconds % 1e3,
-  };
+/** The local date and time a value states, as Temporal fields with no zone. */
+function localDateTime(parts: Checked): Temporal.PlainDateTime {
+  return new Temporal.PlainDateTime(
+    parts.year,
+    parts.month,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+    Math.floor(parts.nanoseconds / 1e6),
+    Math.floor((parts.nanoseconds % 1e6) / 1e3),
+    parts.nanoseconds % 1e3,
+  );
 }
 
 /**
@@ -119,30 +193,82 @@ function subSecondFields(fraction: number | undefined): {
  * @throws {DatePartsError} if the value does not satisfy the contract.
  */
 export function toISO(value: unknown): string {
-  const { parts, precision } = check(value);
+  const parts = check(value);
+  const { depth, year, month, day, hour, minute, second } = parts;
+
+  // Each precision is spelled in one allocation, from its digits' character
+  // codes, rather than joined from padded pieces.
+  const y0 = digit(Math.trunc(year / 1000));
+  const y1 = digit(Math.trunc(year / 100) % 10);
+  const y2 = digit(Math.trunc(year / 10) % 10);
+  const y3 = digit(year % 10);
+  if (depth === YEAR) return String.fromCharCode(y0, y1, y2, y3);
+
+  const m0 = tens(month);
+  const m1 = ones(month);
+  if (depth === MONTH) return String.fromCharCode(y0, y1, y2, y3, DASH, m0, m1);
+
+  const d0 = tens(day);
+  const d1 = ones(day);
+  if (depth === DAY) return String.fromCharCode(y0, y1, y2, y3, DASH, m0, m1, DASH, d0, d1);
+
   const suffix = parts.offsetMinutes === undefined ? "" : formatOffset(parts.offsetMinutes);
+  const h0 = tens(hour);
+  const h1 = ones(hour);
+  if (depth === HOUR) {
+    return (
+      String.fromCharCode(y0, y1, y2, y3, DASH, m0, m1, DASH, d0, d1, LETTER_T, h0, h1) + suffix
+    );
+  }
 
-  let out = pad(stated(parts, "year"), 4);
-  if (precision === "year") return out;
+  const i0 = tens(minute);
+  const i1 = ones(minute);
+  if (depth === MINUTE) {
+    return (
+      String.fromCharCode(
+        y0,
+        y1,
+        y2,
+        y3,
+        DASH,
+        m0,
+        m1,
+        DASH,
+        d0,
+        d1,
+        LETTER_T,
+        h0,
+        h1,
+        COLON,
+        i0,
+        i1,
+      ) + suffix
+    );
+  }
 
-  out += `-${pad(stated(parts, "month"), 2)}`;
-  if (precision === "month") return out;
-
-  out += `-${pad(stated(parts, "day"), 2)}`;
-  if (precision === "day") return out;
-
-  out += `T${pad(stated(parts, "hour"), 2)}`;
-  if (precision === "hour") return out + suffix;
-
-  out += `:${pad(stated(parts, "minute"), 2)}`;
-  if (precision === "minute") return out + suffix;
-
-  out += `:${pad(stated(parts, "second"), 2)}`;
-  if (precision === "second") return out + suffix;
-
-  /* v8 ignore next -- precision is fraction on this line, so the value carries a fraction and the fallback only satisfies the type checker */
-  out += formatFraction(parts.fraction ?? 0);
-  return out + suffix;
+  const clock = String.fromCharCode(
+    y0,
+    y1,
+    y2,
+    y3,
+    DASH,
+    m0,
+    m1,
+    DASH,
+    d0,
+    d1,
+    LETTER_T,
+    h0,
+    h1,
+    COLON,
+    i0,
+    i1,
+    COLON,
+    tens(second),
+    ones(second),
+  );
+  if (depth === SECOND) return clock + suffix;
+  return clock + formatFraction(parts.nanoseconds) + suffix;
 }
 
 /**
@@ -177,48 +303,38 @@ export function toISO(value: unknown): string {
  * @throws {PrecisionError} for a year-only value.
  */
 export function toTemporal(value: unknown): TemporalValue {
-  const { parts, precision } = check(value);
+  const parts = check(value);
 
-  if (precision === "year") {
+  if (parts.depth === YEAR) {
     throw new PrecisionError(
       "Temporal has no year-only type, and this package will not invent a month to reach one. Use toISO() to render a year-precision value, or precisionOf() to branch before converting",
-      precision,
+      "year",
     );
   }
 
-  const year = stated(parts, "year");
-  const month = stated(parts, "month");
-
-  if (precision === "month") {
-    return Temporal.PlainYearMonth.from({ year, month }, { overflow: "reject" });
-  }
-
-  const day = stated(parts, "day");
-  if (precision === "day") {
-    return Temporal.PlainDate.from({ year, month, day }, { overflow: "reject" });
-  }
-
-  const fields = {
-    year,
-    month,
-    day,
-    hour: stated(parts, "hour"),
-    minute: parts.minute ?? 0,
-    second: parts.second ?? 0,
-    ...subSecondFields(parts.fraction),
-  };
-
-  if (parts.offsetMinutes !== undefined) {
-    return Temporal.ZonedDateTime.from(
-      { ...fields, timeZone: formatOffset(parts.offsetMinutes) },
-      { overflow: "reject" },
-    );
-  }
-
-  return Temporal.PlainDateTime.from(fields, { overflow: "reject" });
+  // Built by each type's constructor from the numbers, with no property bag to
+  // read and no intermediate Temporal object along the way.
+  if (parts.depth === MONTH) return new Temporal.PlainYearMonth(parts.year, parts.month);
+  if (parts.depth === DAY) return new Temporal.PlainDate(parts.year, parts.month, parts.day);
+  if (parts.offsetMinutes !== undefined) return atFixedOffset(parts, parts.offsetMinutes);
+  return localDateTime(parts);
 }
 
+/**
+ * The zone names a probe has found to exist, so each is probed once rather than
+ * on every call. A zone that exists keeps existing for the life of the process:
+ * the zone data is the runtime's own and does not change under it. Only names
+ * the probe accepted are kept, only strings, and never more than
+ * {@link KNOWN_ZONES_LIMIT} of them, so no caller's input can grow it without
+ * bound.
+ */
+const knownZones = new Set<string>();
+
+/** The most zone names {@link knownZones} holds before it starts again. */
+const KNOWN_ZONES_LIMIT = 512;
+
 function assertKnownTimeZone(timeZone: string): void {
+  if (knownZones.has(timeZone)) return;
   try {
     // A fixed epoch, so this probe never reads the host clock or the host zone.
     Temporal.Instant.fromEpochMilliseconds(0).toZonedDateTimeISO(timeZone);
@@ -227,10 +343,17 @@ function assertKnownTimeZone(timeZone: string): void {
       `unknown time zone ${JSON.stringify(timeZone)}: supply an IANA identifier such as "America/New_York", or an offset such as "+05:30"`,
     );
   }
+  if (typeof timeZone !== "string") return;
+  if (knownZones.size >= KNOWN_ZONES_LIMIT) knownZones.clear();
+  knownZones.add(timeZone);
+}
+
+function isUsableOffset(offsetMinutes: number): boolean {
+  return Number.isInteger(offsetMinutes) && offsetMinutes >= -1439 && offsetMinutes <= 1439;
 }
 
 function assertUsableOffset(offsetMinutes: number): void {
-  if (!Number.isInteger(offsetMinutes) || offsetMinutes < -1439 || offsetMinutes > 1439) {
+  if (!isUsableOffset(offsetMinutes)) {
     throw new RangeError(
       `offsetMinutes must be an integer in -1439 to 1439 (signed minutes from UTC); received ${String(offsetMinutes)}`,
     );
@@ -238,15 +361,28 @@ function assertUsableOffset(offsetMinutes: number): void {
 }
 
 /**
- * Decide which zone places this value on the timeline, or refuse.
+ * An `offsetMinutes` option that was usable when it was checked and is not when
+ * it is read again, which only an accessor that changes its answer can do,
+ * spelled as a zone name the way it always has been: padded decimal text, which
+ * Temporal then accepts or refuses as a zone.
+ */
+function offsetAsZoneName(offsetMinutes: number): string {
+  const sign = offsetMinutes < 0 ? "-" : "+";
+  const absolute = Math.abs(offsetMinutes);
+  return `${sign}${String(Math.trunc(absolute / 60)).padStart(2, "0")}:${String(absolute % 60).padStart(2, "0")}`;
+}
+
+/**
+ * Decide which zone places this value on the timeline, or refuse: a fixed offset
+ * in signed minutes, or the zone name the caller gave.
  *
  * The value's OWN `offsetMinutes` always wins. That is what the sender said, and
  * re-zoning it on a caller's say-so would move the instant. `options` therefore
  * apply only to a value whose offset is unknown, which is exactly the case they
  * exist for.
  */
-function resolveTimeZone(parts: DateParts, options: ZoneOptions | undefined): string {
-  if (parts.offsetMinutes !== undefined) return formatOffset(parts.offsetMinutes);
+function resolveTimeZone(parts: Checked, options: ZoneOptions | undefined): number | string {
+  if (parts.offsetMinutes !== undefined) return parts.offsetMinutes;
 
   if (options?.timeZone !== undefined && options.offsetMinutes !== undefined) {
     throw new TypeError(
@@ -256,7 +392,9 @@ function resolveTimeZone(parts: DateParts, options: ZoneOptions | undefined): st
 
   if (options?.offsetMinutes !== undefined) {
     assertUsableOffset(options.offsetMinutes);
-    return formatOffset(options.offsetMinutes);
+    // Read once more, as the zone has always been built from this third read.
+    const offsetMinutes = options.offsetMinutes;
+    return isUsableOffset(offsetMinutes) ? offsetMinutes : offsetAsZoneName(offsetMinutes);
   }
 
   if (options?.timeZone !== undefined) {
@@ -267,6 +405,94 @@ function resolveTimeZone(parts: DateParts, options: ZoneOptions | undefined): st
   throw new MissingZoneError(
     "this value carries no offsetMinutes, and no zone was supplied: an absolute instant needs a zone, and this package supplies none. Pass { timeZone } or { offsetMinutes }. It will not fall back to the host time zone, to UTC, or to any other default, because a fallback turns an unknown offset into a plausible wrong instant",
   );
+}
+
+/**
+ * A value at a fixed offset, as a `ZonedDateTime` in that offset's zone.
+ *
+ * A fixed offset has no transitions, so a local time maps to exactly one instant
+ * and there is nothing to disambiguate: the instant is computed, and the one
+ * Temporal object returned is the only one built.
+ */
+function atFixedOffset(parts: Checked, offsetMinutes: number): Temporal.ZonedDateTime {
+  return new Temporal.ZonedDateTime(
+    epochNanosecondsAt(parts, offsetMinutes),
+    formatOffset(offsetMinutes),
+  );
+}
+
+/** How a named zone resolves a local time it skips or repeats: the earlier, then the later. */
+const EARLIER = { disambiguation: "earlier", overflow: "reject" } as const;
+const LATER = { disambiguation: "later", overflow: "reject" } as const;
+
+/**
+ * A value's local time placed in a named zone, or a refusal when the zone skips
+ * or repeats it.
+ *
+ * Ambiguity is established by ASKING, not by catching. The two disambiguation
+ * rules agree on every local time a zone maps exactly once, and disagree on
+ * exactly the times a transition skips or repeats. Reading the answer off a
+ * thrown message would instead relabel any other failure as a transition, and a
+ * fixed offset zone, which has no transitions at all, would be told it did.
+ */
+function inNamedZone(parts: Checked, timeZone: string): Temporal.ZonedDateTime {
+  const fields = {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    hour: parts.hour,
+    minute: parts.minute,
+    second: parts.second,
+    millisecond: Math.floor(parts.nanoseconds / 1e6),
+    microsecond: Math.floor((parts.nanoseconds % 1e6) / 1e3),
+    nanosecond: parts.nanoseconds % 1e3,
+    timeZone,
+  };
+  const earliest = Temporal.ZonedDateTime.from(fields, EARLIER);
+  const latest = Temporal.ZonedDateTime.from(fields, LATER);
+  if (earliest.equals(latest)) return earliest;
+
+  // A repeated local time still reads back as itself, at two offsets. A skipped
+  // one cannot: both rules move it off the gap, so the wall clock shifts.
+  const local = localDateTime(parts);
+  const skipped = !earliest.toPlainDateTime().equals(local);
+  throw new AmbiguousLocalTimeError(
+    skipped
+      ? `${local.toString()} does not exist in ${timeZone}: a daylight-saving transition skips it, so there is no instant to return. Say which side of the transition you mean by passing that offset as { offsetMinutes }`
+      : `${local.toString()} happens twice in ${timeZone}: a daylight-saving transition repeats it, at ${earliest.offset} and again at ${latest.offset}, so there is no single instant to return. Choose the one you mean and pass it as { offsetMinutes }`,
+  );
+}
+
+/**
+ * Validate a value for an instant and decide its zone: the components and either
+ * a fixed offset or a zone name, or the refusal.
+ */
+function placed(value: unknown, options: ZoneOptions | undefined): [Checked, number | string] {
+  const parts = check(value);
+
+  if (parts.depth < HOUR) {
+    // A value below hour precision that also states no zone is missing BOTH, and
+    // hearing about them one at a time is how a caller fixes one and comes back.
+    // The precision is what is reported, because supplying a zone would not make
+    // this value convertible, but the message says the zone is absent too, and
+    // says as firmly as the zone refusal does that nothing will be defaulted.
+    const alsoNoZone =
+      parts.offsetMinutes === undefined &&
+      options?.timeZone === undefined &&
+      options?.offsetMinutes === undefined;
+    const precision = precisionAt(parts.depth);
+
+    throw new PrecisionError(
+      `an absolute instant needs a time of day, and this value has ${precision} precision. Supplying one would mean inventing components the value does not carry. Use toTemporal() for the calendar value${
+        alsoNoZone
+          ? ". The zone is missing too: this value carries no offsetMinutes and no { timeZone } or { offsetMinutes } was supplied, and neither the host time zone nor UTC will be used in their place"
+          : ""
+      }`,
+      precision,
+    );
+  }
+
+  return [parts, resolveTimeZone(parts, options)];
 }
 
 /**
@@ -297,63 +523,8 @@ function resolveTimeZone(parts: DateParts, options: ZoneOptions | undefined): st
  * ```
  */
 export function toZonedDateTime(value: unknown, options?: ZoneOptions): Temporal.ZonedDateTime {
-  const { parts, precision } = check(value);
-
-  if (!atLeast(precision, "hour")) {
-    // A value below hour precision that also states no zone is missing BOTH, and
-    // hearing about them one at a time is how a caller fixes one and comes back.
-    // The precision is what is reported, because supplying a zone would not make
-    // this value convertible, but the message says the zone is absent too, and
-    // says as firmly as the zone refusal does that nothing will be defaulted.
-    const alsoNoZone =
-      parts.offsetMinutes === undefined &&
-      options?.timeZone === undefined &&
-      options?.offsetMinutes === undefined;
-
-    throw new PrecisionError(
-      `an absolute instant needs a time of day, and this value has ${precision} precision. Supplying one would mean inventing components the value does not carry. Use toTemporal() for the calendar value${
-        alsoNoZone
-          ? ". The zone is missing too: this value carries no offsetMinutes and no { timeZone } or { offsetMinutes } was supplied, and neither the host time zone nor UTC will be used in their place"
-          : ""
-      }`,
-      precision,
-    );
-  }
-
-  const timeZone = resolveTimeZone(parts, options);
-  const local = Temporal.PlainDateTime.from(
-    {
-      year: stated(parts, "year"),
-      month: stated(parts, "month"),
-      day: stated(parts, "day"),
-      hour: stated(parts, "hour"),
-      minute: parts.minute ?? 0,
-      second: parts.second ?? 0,
-      ...subSecondFields(parts.fraction),
-    },
-    { overflow: "reject" },
-  );
-
-  // Ambiguity is established by ASKING, not by catching. The two disambiguation
-  // rules agree on every local time a zone maps exactly once, and disagree on
-  // exactly the times a transition skips or repeats. Reading the answer off a
-  // thrown message would instead relabel any other failure as a transition, and
-  // a fixed offset zone, which has no transitions at all, would be told it did.
-  const earliest = local.toZonedDateTime(timeZone, { disambiguation: "earlier" });
-  const latest = local.toZonedDateTime(timeZone, { disambiguation: "later" });
-
-  if (!earliest.equals(latest)) {
-    // A repeated local time still reads back as itself, at two offsets. A skipped
-    // one cannot: both rules move it off the gap, so the wall clock shifts.
-    const skipped = !earliest.toPlainDateTime().equals(local);
-    throw new AmbiguousLocalTimeError(
-      skipped
-        ? `${local.toString()} does not exist in ${timeZone}: a daylight-saving transition skips it, so there is no instant to return. Say which side of the transition you mean by passing that offset as { offsetMinutes }`
-        : `${local.toString()} happens twice in ${timeZone}: a daylight-saving transition repeats it, at ${earliest.offset} and again at ${latest.offset}, so there is no single instant to return. Choose the one you mean and pass it as { offsetMinutes }`,
-    );
-  }
-
-  return earliest;
+  const [parts, zone] = placed(value, options);
+  return typeof zone === "number" ? atFixedOffset(parts, zone) : inNamedZone(parts, zone);
 }
 
 /**
@@ -370,5 +541,10 @@ export function toZonedDateTime(value: unknown, options?: ZoneOptions): Temporal
  * ```
  */
 export function toInstant(value: unknown, options?: ZoneOptions): Temporal.Instant {
-  return toZonedDateTime(value, options).toInstant();
+  const [parts, zone] = placed(value, options);
+  // At a fixed offset the instant is computed and built directly, with no zoned
+  // value made on the way to it.
+  return typeof zone === "number"
+    ? new Temporal.Instant(epochNanosecondsAt(parts, zone))
+    : inNamedZone(parts, zone).toInstant();
 }
